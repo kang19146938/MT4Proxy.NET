@@ -6,14 +6,14 @@
 using namespace System;
 #include <set>
 #include "MT4Args.h"
+#include "Utils.h"
 
-namespace MT4CliWarpper {
+namespace MT4CliWrapper {
 
 	public delegate void LogResponse(String^);
 
 	public ref class MT4Wrapper
 	{
-		// TODO:  在此处添加此类的方法。
 	public:
 		static void init();
 		static void uninit();
@@ -28,13 +28,13 @@ namespace MT4CliWarpper {
 		int TradeTransaction(TradeTransInfoArgs);
 		int MarginLevelRequest(const int login, MarginLevelArgs% level);
 		array<TradeRecordResult>^ UserRecordsRequest(const int logins, int from, int to);
-
-	public:
-		event LogResponse^ OnLog;
+		int UserRecordNew(UserRecordArgs aArgs);
+	public: //Utils
+		static String^ GetErrorMessage(int aCode) { return GetErrMsg(aCode); };
+		static event LogResponse^ OnLog;
 	private:
 		void Log(String^);
 		void Log(std::string);
-		void FreeNodes(void* aHead, size_t aNodeSize);
 	private:
 		static CManagerFactory*   m_ManagerFactory;
 		// use Enum as key instead
@@ -45,6 +45,6 @@ namespace MT4CliWarpper {
 		System::String^ m_MT4Server;
 		int m_MT4ManagerAccount;
 		String^ m_MT4ManagerPassword;
-		
+
 	};
 }

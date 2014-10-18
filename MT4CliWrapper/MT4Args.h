@@ -98,3 +98,37 @@ public value struct TradeRecordResult
 	int               cmd;              // trade command
 	int               volume;           // volume
 };
+
+[StructLayoutAttribute(LayoutKind::Sequential)]
+public value struct UserRecordArgs
+{
+	UserRecord ToNative()
+	{
+		UserRecord ret = UserRecord();
+		ret.login = login;
+		ret.enable = TRUE;
+		ret.send_reports = TRUE;
+		ret.user_color = USER_COLOR_NONE;
+		ret.leverage = leverage;
+		String^ group = this->group;
+		memcpy(ret.group, marshal_as<std::string, String^>(group).c_str() , sizeof(ret.group));
+		String^ password = this->password;
+		memcpy(ret.password, marshal_as<std::string, String^>(password).c_str(), sizeof(ret.password));
+		String^ name = this->name;
+		memcpy(ret.name, marshal_as<std::string, String^>(name).c_str(), sizeof(ret.name));
+		String^ email = this->email;
+		memcpy(ret.email, marshal_as<std::string, String^>(email).c_str(), sizeof(ret.email));
+		return ret;
+	}
+	int login;  
+	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 16)]
+	String^ group;        // user group
+	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 16)]
+	String^ password;  
+	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 128)]
+	String^ name;
+	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 48)]
+	String^ email;
+	int leverage;
+	
+};

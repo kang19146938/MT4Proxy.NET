@@ -30,7 +30,10 @@
     <ClInclude Include="MT4Args.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MT4Warpper.h">
+    <ClInclude Include="MT4Wrapper.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -41,7 +44,7 @@
     <ClCompile Include="Stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="MT4Warpper.cpp">
+    <ClCompile Include="MT4Wrapper.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

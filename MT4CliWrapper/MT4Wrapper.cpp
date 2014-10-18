@@ -1,7 +1,7 @@
 // 这是主 DLL 文件。
 #include "stdafx.h"
-#include "MT4Warpper.h"
-using namespace MT4CliWarpper;
+#include "MT4Wrapper.h"
+using namespace MT4CliWrapper;
 
 void MT4Wrapper::init()
 {
@@ -97,18 +97,6 @@ void MT4Wrapper::Log(std::string aLog)
 	Log(log);
 }
 
-void MT4Wrapper::FreeNodes(void* aHead, size_t aNodeSize)
-{
-	if (!aHead) return;
-	char* ptr = (char*)aHead;
-	do
-	{
-		void* node = ptr;
-		ptr = (char*)*(ptr + aNodeSize - sizeof(void*));
-		free(node);
-	} while (ptr);
-}
-
 int MT4Wrapper::TradeTransaction(TradeTransInfoArgs aArgs)
 {
 	return m_pManagerDirect->TradeTransaction(&aArgs.ToNative());
@@ -143,4 +131,14 @@ array<TradeRecordResult>^ MT4Wrapper::UserRecordsRequest(const int logins, int f
 	}
 	m_pManagerDirect->MemFree(ret);
 	return result;
+}
+
+int MT4Wrapper::UserRecordNew(UserRecordArgs aArgs)
+{
+	int ret = m_pManagerDirect->UserRecordNew(&aArgs.ToNative());
+	if (ret != RET_OK)
+	{
+		printf("%s\n", m_pManagerDirect->ErrorDescription(ret));
+	}
+	return ret;
 }
