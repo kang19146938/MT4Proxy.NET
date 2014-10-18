@@ -28,7 +28,7 @@ namespace MT4Proxy.NET.Service
             var result = aServer.MT4.UserRecordNew(args);
             dynamic resp = new ExpandoObject();
             resp.is_succ = result == 0;
-            resp.err_msg = MT4CliWrapper.MT4Wrapper.GetErrorMessage(result);
+            resp.err_msg = Utils.GetErrorMessage(result);
             aServer.Output = JsonConvert.SerializeObject(resp);
             aServer.Logger.Info(string.Format("OpenAccount,response:{0}", aServer.Output));
         }

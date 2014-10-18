@@ -143,8 +143,8 @@
     <ClInclude Include="MT4Args.h" />
     <ClInclude Include="MT4ManagerAPI.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="ReturnCode.h" />
     <ClInclude Include="Stdafx.h" />
-    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />

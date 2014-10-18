@@ -6,7 +6,7 @@
 using namespace System;
 #include <set>
 #include "MT4Args.h"
-#include "Utils.h"
+#include "ReturnCode.h"
 
 namespace MT4CliWrapper {
 
@@ -30,7 +30,6 @@ namespace MT4CliWrapper {
 		array<TradeRecordResult>^ UserRecordsRequest(const int logins, int from, int to);
 		int UserRecordNew(UserRecordArgs aArgs);
 	public: //Utils
-		static String^ GetErrorMessage(int aCode) { return GetErrMsg(aCode); };
 		static event LogResponse^ OnLog;
 	private:
 		void Log(String^);
@@ -45,6 +44,5 @@ namespace MT4CliWrapper {
 		System::String^ m_MT4Server;
 		int m_MT4ManagerAccount;
 		String^ m_MT4ManagerPassword;
-
 	};
 }
