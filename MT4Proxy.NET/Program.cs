@@ -26,7 +26,8 @@ namespace MT4Proxy.NET
             Poll.init();
             logger.Info("准备启动redis监听服务");
             RedisServer.Init();
-            
+            logger.Info("准备启动zmq监听服务");
+            ZmqServer.Init();
             logger.Info("启动完成，按任意键退出");
             Console.Read();
             Poll.uninit();

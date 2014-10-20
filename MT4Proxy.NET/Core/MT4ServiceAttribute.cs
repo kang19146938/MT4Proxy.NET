@@ -19,5 +19,23 @@ namespace MT4Proxy.NET.Core
             get;
             set;
         }
+
+        public bool EnableRedis
+        {
+            get;
+            set;
+        }
+
+        public bool EnableZMQ
+        {
+            get;
+            set;
+        }
+
+        public string ZmqApiName
+        {
+            get;
+            set;
+        }
     }
 }

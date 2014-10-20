@@ -2,16 +2,13 @@
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
-using System.Net.Http;
-using System.Dynamic;
 using CSRedis;
 using MT4CliWrapper;
 using NLog;
+using Newtonsoft.Json;
 
 namespace MT4Proxy.NET.Core
 {
@@ -78,10 +75,12 @@ namespace MT4Proxy.NET.Core
                 Password = _config.AppSettings["redis_password"]
             };
             _redis = ConnectionMultiplexer.Connect(redisconfig);
-            foreach (var i in GetTypesWithServiceAttribute())
+            foreach (var i in Utils.GetTypesWithServiceAttribute())
             {
                 var attr = i.GetCustomAttribute(typeof(MT4ServiceAttribute)) as MT4ServiceAttribute;
                 var service = i;
+                if (!attr.EnableRedis)
+                    continue;
                 initlogger.Info(string.Format("准备启动redis监听服务:{0}", i.Name));
                 new Thread(() =>
                 {
@@ -104,9 +103,12 @@ namespace MT4Proxy.NET.Core
                                             server.RedisOutputList = attr.RedisOutputList;
                                             server.Logger = LogManager.GetLogger("common");
                                             var serviceobj = Activator.CreateInstance(service) as IService;
-                                            serviceobj.OnRequest(server, item);
+                                            server.Logger.Info(string.Format("Redis,recv request:{0}", item));
+                                            var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(item);
+                                            serviceobj.OnRequest(server, dict);
                                             if (!string.IsNullOrEmpty(server.Output) && !string.IsNullOrEmpty(server.RedisOutputList))
                                             {
+                                                server.Logger.Info(string.Format("Redis,response:{0}", server.Output));
                                                 await FetchRedisConn.ListLeftPushAsync(server.RedisOutputList, new RedisValue[] { server.Output });
                                             }
                                         }
@@ -128,17 +130,6 @@ namespace MT4Proxy.NET.Core
                         Thread.Sleep(1000);
                     }
                 }).Start();
-            }
-        }
-
-        private static IEnumerable<Type> GetTypesWithServiceAttribute()
-        {
-            foreach (Type type in Assembly.GetExecutingAssembly().GetTypes())
-            {
-                if (type.GetCustomAttributes(typeof(MT4ServiceAttribute), true).Length > 0)
-                {
-                    yield return type;
-                }
             }
         }
 

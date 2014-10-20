@@ -8,6 +8,6 @@ namespace MT4Proxy.NET.Core
 {
     public interface IService
     {
-        void OnRequest(IServer aServer, string aJson);
+        void OnRequest(IServer aServer, Dictionary<string, string> aArgs);
     }
 }

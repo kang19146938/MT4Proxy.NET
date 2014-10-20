@@ -51,13 +51,8 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="clrzmq, Version=2.2.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\clrzmq.2.2.5\lib\clrzmq.dll</HintPath>
-    </Reference>
-    <Reference Include="clrzmq-ext, Version=2.2.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\clrzmq.2.2.5\lib\clrzmq-ext.dll</HintPath>
+    <Reference Include="Castle.Zmq">
+      <HintPath>..\packages\Castle.Zmq.4.0.1\lib\net40\Castle.Zmq.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -99,6 +94,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <Content Include="libzmq.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="mtmanapi.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

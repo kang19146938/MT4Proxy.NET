@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,6 +10,17 @@ namespace MT4Proxy.NET.Core
 {
     public static class Utils
     {
+        public static IEnumerable<Type> GetTypesWithServiceAttribute()
+        {
+            foreach (Type type in Assembly.GetExecutingAssembly().GetTypes())
+            {
+                if (type.GetCustomAttributes(typeof(MT4ServiceAttribute), true).Length > 0)
+                {
+                    yield return type;
+                }
+            }
+        }
+
         private static DateTime origin = new DateTime(1970, 1, 1);
         public static int ToTime32(this DateTime aDatetime)
         {

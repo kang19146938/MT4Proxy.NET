@@ -74,7 +74,7 @@ namespace MT4Proxy.NET.Core
                 Logger logger = LogManager.GetLogger("beat");
                 while (true)
                 {
-                    logger.Info(string.Format("临时MT4池闲置:{0},会话MT4池闲置:{1}", _idel.Count, Poll.Keys.Count()));
+                    logger.Trace(string.Format("临时MT4池闲置:{0},会话MT4池闲置:{1}", _idel.Count, Poll.Keys.Count()));
                     Process proc = Process.GetCurrentProcess();
                     long usedMemory = proc.PrivateMemorySize64;
                     MT4API fetch = null;
@@ -115,7 +115,9 @@ namespace MT4Proxy.NET.Core
             }
             catch(Exception e)
             {
-                Console.WriteLine(e.StackTrace);
+                Logger errlogger = LogManager.GetLogger("clr_error");
+                errlogger.Error("Dog线程遇到问题", e);
+                Thread.Sleep(1000);
             }
         }
 

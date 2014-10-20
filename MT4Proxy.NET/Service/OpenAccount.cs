@@ -9,13 +9,12 @@ using System.Dynamic;
 
 namespace MT4Proxy.NET.Service
 {
-    [MT4Service(RedisKey="users:list")]
+    [MT4Service(RedisKey = "users:list", EnableRedis = false, EnableZMQ = true)]
     class OpenAccount:IService
     {
-        public void OnRequest(IServer aServer, string aJson)
+        public void OnRequest(IServer aServer, Dictionary<string, string> aJson)
         {
-            aServer.Logger.Info(string.Format("OpenAccount,recv request:{0}", aJson));
-            var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(aJson);
+            var dict = aJson;
             aServer.RedisOutputList = string.Format("users:{0}:{1}:list", dict["mt4UserID"], dict["taskId"]);
             var args = new UserRecordArgs {
                 login = int.Parse(dict["mt4UserID"]),

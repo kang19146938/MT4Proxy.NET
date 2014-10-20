@@ -1,48 +1,93 @@
-﻿using MT4CliWrapper;
-using NLog;
-using NLog.Internal;
+﻿using NLog.Internal;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Collections.Concurrent;
+using System.Reflection;
 using System.Threading.Tasks;
-using ZMQ;
+using MT4CliWrapper;
+using NLog;
+using Newtonsoft.Json;
+using Castle.Zmq;
+using System.Text;
 
 namespace MT4Proxy.NET.Core
 {
-    class ZmqServer:IServer
+    class ZmqServer : IServer, IDisposable
     {
-        private static Context zmqCtx = new Context(8);
+        private static Context _zmqCtx = null;
+        private static ConcurrentDictionary<string, Type> _apiDict = new ConcurrentDictionary<string, Type>();
+
+        public ZmqServer()
+        {
+            MT4 = Poll.New();
+        }
         public static void Init()
         {
+            Logger initlogger = LogManager.GetLogger("common");
+            _zmqCtx = new Context();
             var config = new ConfigurationManager();
             var zmqBind = config.AppSettings["zmq_bind"];
-            using (var repSocket = zmqCtx.Socket(SocketType.REP))
+            foreach (var i in Utils.GetTypesWithServiceAttribute())
             {
-                repSocket.Bind(zmqBind);
-                while (true)
+                var attr = i.GetCustomAttribute(typeof(MT4ServiceAttribute)) as MT4ServiceAttribute;
+                var service = i;
+                if (attr.EnableZMQ)
                 {
-                    
-                    var msg = repSocket.Recv();
-                    var msgStr = Encoding.UTF8.GetString(msg);
-                    new ZmqServer { ZmqSocket = repSocket }.Work(msgStr);
+                    if (!string.IsNullOrWhiteSpace(attr.ZmqApiName))
+                    {
+                        initlogger.Info(string.Format("准备初始化ZMQ服务:{0}", attr.ZmqApiName));
+                        _apiDict[attr.ZmqApiName] = i;
+                    }
+                    else
+                    {
+                        initlogger.Info(string.Format("准备初始化ZMQ服务:{0}", service.Name));
+                        _apiDict[service.Name] = i;
+                    }
                 }
             }
-        }
-
-        public void Work(string aJson)
-        {
-
-        }
-
-        public Socket ZmqSocket
-        {
-            get;
-            private set;
-        }
-        public void Response(string aJson)
-        {
-            ZmqSocket.Send(aJson, Encoding.UTF8);
+            var repSocket = _zmqCtx.CreateSocket(SocketType.Rep);
+            repSocket.Bind(zmqBind);
+            var polling = new Polling(PollingEvents.RecvReady, repSocket);
+            polling.RecvReady += (socket) =>
+            {
+                try
+                {
+                    var item = socket.RecvString(Encoding.UTF8);
+                    var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(item);
+                    var api_name = dict["__api"];
+                    if(_apiDict.ContainsKey(api_name))
+                    {
+                        var service = _apiDict[api_name];
+                        var serviceobj = Activator.CreateInstance(service) as IService;
+                        using (var server = new ZmqServer())
+                        {
+                            server.Logger = LogManager.GetLogger("common");
+                            server.Logger.Info(string.Format("ZMQ,recv request:{0}", item));
+                            serviceobj.OnRequest(server, dict);
+                            if (server.Output != null)
+                            {
+                                server.Logger.Info(string.Format("ZMQ,response:{0}", server.Output));
+                                socket.Send(server.Output);
+                            }
+                            else
+                            {
+                                server.Logger.Warn(string.Format("ZMQ,response empty,source:{0}", item));
+                                socket.Send(string.Empty);
+                            }
+                        }
+                    }
+                }
+                catch(Exception e)
+                {
+                    Logger logger = LogManager.GetLogger("clr_error");
+                    logger.Error("处理单个ZMQ请求失败", e);
+                }
+                finally
+                {
+                    Task.Factory.StartNew(() => { polling.PollForever(); });
+                }
+            };
+            Task.Factory.StartNew(() => { polling.PollForever(); });
         }
 
         public void Pub(string aChannel, string aJson)
@@ -70,6 +115,26 @@ namespace MT4Proxy.NET.Core
         {
             get;
             set;
+        }
+
+        bool disposed = false;
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+
+            if (disposing)
+            {
+                Poll.Release(MT4);
+                MT4 = null;
+                Logger = null;
+            }
+            disposed = true;
         }
     }
 }
