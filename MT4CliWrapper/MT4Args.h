@@ -3,46 +3,7 @@
 using namespace System;
 using namespace System::Runtime::InteropServices;
 
-[StructLayoutAttribute(LayoutKind::Sequential)]
-public value struct TradeTransInfoArgs
-{
-	TradeTransInfo ToNative()
-	{
-		TradeTransInfo ret = TradeTransInfo();
-		ret.type = type;
-		ret.reserved = reserved;
-		ret.cmd = cmd;
-		ret.order = order;
-		ret.orderby = orderby;
-		String^ symbol = this->symbol;
-		memcpy(ret.symbol, marshal_as<std::string , System::String^>(symbol).c_str(), sizeof(ret.symbol));
-		ret.volume = volume;
-		ret.price = price;
-		ret.sl = sl;
-		ret.tp = tp;
-		ret.ie_deviation = ie_deviation;
-		String^ comment = this->comment;
-		memcpy(ret.comment, marshal_as<std::string, System::String^>(comment).c_str(), sizeof(ret.comment));
-		ret.expiration = expiration;
-		ret.crc = crc;
-		return ret;
-	}
-	
-	UCHAR             type;             // trade transaction type
-	char              reserved;         // reserved
-	short             cmd;              // trade command
-	int               order, orderby;    // order, order by
-	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 12)]
-	String^           symbol;       // trade symbol
-	int               volume;           // trade volume
-	double            price;            // trade price
-	double            sl, tp;            // stoploss, takeprofit
-	int               ie_deviation;     // deviation on IE
-	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 32)]
-	String^              comment;      // comment
-	__time32_t        expiration;       // pending order expiration time
-	int               crc;              // crc
-};
+#define TO_CHARS(SOURCE,TARGET) String^ SOURCE = this->SOURCE;memcpy(TARGET.SOURCE, marshal_as<std::string, String^>(SOURCE).c_str(), sizeof(TARGET.SOURCE));
 
 [StructLayoutAttribute(LayoutKind::Sequential)]
 public value struct MarginLevelArgs
@@ -51,8 +12,7 @@ public value struct MarginLevelArgs
 	{
 		MarginLevel ret = MarginLevel();
 		ret.login = login;
-		String^ group = this->group;
-		memcpy(ret.group, marshal_as<std::string, System::String^>(group).c_str(), sizeof(ret.group));
+		TO_CHARS(group, ret);
 		ret.leverage = leverage;
 		ret.updated = updated;
 		ret.balance = balance;
@@ -93,7 +53,7 @@ public value struct TradeRecordResult
 {
 	int               order;            // order ticket
 	int               login;            // owner's login
-	String^           symbol;      // security
+	String^           symbol;           // security
 	int               digits;           // security precision
 	int               cmd;              // trade command
 	int               volume;           // volume
@@ -110,19 +70,15 @@ public value struct UserRecordArgs
 		ret.send_reports = TRUE;
 		ret.user_color = USER_COLOR_NONE;
 		ret.leverage = leverage;
-		String^ group = this->group;
-		memcpy(ret.group, marshal_as<std::string, String^>(group).c_str() , sizeof(ret.group));
-		String^ password = this->password;
-		memcpy(ret.password, marshal_as<std::string, String^>(password).c_str(), sizeof(ret.password));
-		String^ name = this->name;
-		memcpy(ret.name, marshal_as<std::string, String^>(name).c_str(), sizeof(ret.name));
-		String^ email = this->email;
-		memcpy(ret.email, marshal_as<std::string, String^>(email).c_str(), sizeof(ret.email));
+		TO_CHARS(group, ret);
+		TO_CHARS(password, ret);
+		TO_CHARS(name, ret);
+		TO_CHARS(email, ret);
 		return ret;
 	}
 	int login;  
 	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 16)]
-	String^ group;        // user group
+	String^ group;
 	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 16)]
 	String^ password;  
 	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 128)]
@@ -130,5 +86,73 @@ public value struct UserRecordArgs
 	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 48)]
 	String^ email;
 	int leverage;
-	
+};
+
+public enum class TradeTransInfoTypes : UCHAR
+{
+	//---
+	TT_PRICES_GET,                      // prices requets
+	TT_PRICES_REQUOTE,                  // requote
+	//--- client trade transaction
+	TT_ORDER_IE_OPEN = 64,                // open order (Instant Execution)
+	TT_ORDER_REQ_OPEN,                  // open order (Request Execution)
+	TT_ORDER_MK_OPEN,                   // open order (Market Execution)
+	TT_ORDER_PENDING_OPEN,              // open pending order
+	//---
+	TT_ORDER_IE_CLOSE,                  // close order (Instant Execution)
+	TT_ORDER_REQ_CLOSE,                 // close order (Request Execution)
+	TT_ORDER_MK_CLOSE,                  // close order (Market Execution)
+	//---
+	TT_ORDER_MODIFY,                    // modify pending order
+	TT_ORDER_DELETE,                    // delete pending order
+	TT_ORDER_CLOSE_BY,                  // close order by order
+	TT_ORDER_CLOSE_ALL,                 // close all orders by symbol
+	//--- broker trade transactions
+	TT_BR_ORDER_OPEN,                   // open order
+	TT_BR_ORDER_CLOSE,                  // close order
+	TT_BR_ORDER_DELETE,                 // delete order (ANY OPEN ORDER!!!)
+	TT_BR_ORDER_CLOSE_BY,               // close order by order
+	TT_BR_ORDER_CLOSE_ALL,              // close all orders by symbol
+	TT_BR_ORDER_MODIFY,                 // modify open price, stoploss, takeprofit etc. of order
+	TT_BR_ORDER_ACTIVATE,               // activate pending order
+	TT_BR_ORDER_COMMENT,                // modify comment of order
+	TT_BR_BALANCE                       // balance/credit
+};
+
+[StructLayoutAttribute(LayoutKind::Sequential)]
+public value struct TradeTransInfoArgs
+{
+	TradeTransInfo ToNative()
+	{
+		TradeTransInfo ret = TradeTransInfo();
+		ret.type = (UCHAR)type;
+		ret.reserved = reserved;
+		ret.cmd = cmd;
+		ret.order = order;
+		ret.orderby = orderby;
+		TO_CHARS(symbol, ret);
+		ret.volume = volume;
+		ret.price = price;
+		ret.sl = sl;
+		ret.tp = tp;
+		ret.ie_deviation = ie_deviation;
+		TO_CHARS(comment, ret);
+		ret.expiration = expiration;
+		ret.crc = crc;
+		return ret;
+	}
+	TradeTransInfoTypes  type;             // trade transaction type
+	char                 reserved;         // reserved
+	short                cmd;              // trade command
+	int                  order, orderby;    // order, order by
+	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 12)]
+	String^              symbol;
+	int                  volume;           // trade volume
+	double               price;            // trade price
+	double               sl, tp;            // stoploss, takeprofit
+	int                  ie_deviation;     // deviation on IE
+	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 32)]
+	String^              comment;      // comment
+	__time32_t           expiration;       // pending order expiration time
+	int                  crc;              // crc
 };

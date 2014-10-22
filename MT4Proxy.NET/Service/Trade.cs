@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MT4CliWrapper;
 
 namespace MT4Proxy.NET.Service
 {
@@ -13,6 +14,7 @@ namespace MT4Proxy.NET.Service
         public void OnRequest(IServer aServer, Dictionary<string, string> aContent)
         {
             Console.WriteLine(aContent);
+
             aServer.Output = aContent.ToString();
         }
     }

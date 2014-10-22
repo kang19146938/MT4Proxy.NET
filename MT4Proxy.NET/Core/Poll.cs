@@ -109,7 +109,6 @@ namespace MT4Proxy.NET.Core
                             else
                                 Poll._poll.TryAdd(i, fetch);
                     }
-                    GC.Collect();
                     Thread.Sleep(1000);
                 }
             }
