@@ -21,3 +21,32 @@ MT4Proxy.NET
 若使用一般控制台启动方式，运行MT4Proxy.NET.exe；
 
 若使用Windows服务启动方式，请在"服务"面板找到MT4Proxy.NET并启动。
+
+再开发
+======
+
+一个关于入金的例子:
+
+    [MT4Service(EnableZMQ = true)]
+    class Pay : IService
+    {
+        public void OnRequest(IServer aServer, dynamic aJson)
+        {
+            var dict = aJson;
+            var args = new TradeTransInfoArgs
+            {
+                type = TradeTransInfoTypes.TT_BR_BALANCE,
+                cmd = Convert.ToInt16(dict.cmd),
+                orderby = Convert.ToInt32(dict.mt4UserID),
+                price = Convert.ToDouble(dict.price)
+            };
+            var result = aServer.MT4.TradeTransaction(args);
+            dynamic resp = new ExpandoObject();
+            resp.is_succ = result == 0;
+            resp.errMsg = Utils.GetErrorMessage(result);
+            resp.errCode = (int)result;
+            aServer.Output = JsonConvert.SerializeObject(resp);
+        }
+    }
+    
+`MT4Service`特性可以设置是否使用ZMQ或者Redis进行处理，强制设置ZMQ API标识或者Redis监视的列表等等。`IServer`接口提供了返回内容和Redis Push位置。
