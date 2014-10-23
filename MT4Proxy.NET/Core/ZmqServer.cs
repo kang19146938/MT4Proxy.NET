@@ -9,6 +9,7 @@ using NLog;
 using Newtonsoft.Json;
 using Castle.Zmq;
 using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace MT4Proxy.NET.Core
 {
@@ -53,8 +54,8 @@ namespace MT4Proxy.NET.Core
                 try
                 {
                     var item = socket.RecvString(Encoding.UTF8);
-                    var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(item);
-                    var api_name = dict["__api"];
+                    dynamic json = JObject.Parse(item);
+                    string api_name = json.__api;
                     if(_apiDict.ContainsKey(api_name))
                     {
                         var service = _apiDict[api_name];
@@ -63,7 +64,7 @@ namespace MT4Proxy.NET.Core
                         {
                             server.Logger = LogManager.GetLogger("common");
                             server.Logger.Info(string.Format("ZMQ,recv request:{0}", item));
-                            serviceobj.OnRequest(server, dict);
+                            serviceobj.OnRequest(server, json);
                             if (server.Output != null)
                             {
                                 server.Logger.Info(string.Format("ZMQ,response:{0}", server.Output));
@@ -81,6 +82,7 @@ namespace MT4Proxy.NET.Core
                 {
                     Logger logger = LogManager.GetLogger("clr_error");
                     logger.Error("处理单个ZMQ请求失败", e);
+                    socket.Send(string.Empty);
                 }
                 finally
                 {

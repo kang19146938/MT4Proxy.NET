@@ -104,8 +104,9 @@ namespace MT4Proxy.NET.Core
                                             server.Logger = LogManager.GetLogger("common");
                                             var serviceobj = Activator.CreateInstance(service) as IService;
                                             server.Logger.Info(string.Format("Redis,recv request:{0}", item));
-                                            var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(item);
-                                            serviceobj.OnRequest(server, dict);
+                                            //var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(item);
+                                            var json = JsonConvert.DeserializeObject<dynamic>(item);
+                                            serviceobj.OnRequest(server, json);
                                             if (!string.IsNullOrEmpty(server.Output) && !string.IsNullOrEmpty(server.RedisOutputList))
                                             {
                                                 server.Logger.Info(string.Format("Redis,response:{0}", server.Output));

@@ -20,7 +20,19 @@ namespace MT4Proxy.Server
 
         protected override void OnStart(string[] args)
         {
-            MT4Proxy.NET.Program.Main(args);
+            try
+            {
+                Environment.CurrentDirectory = System.AppDomain.CurrentDomain.BaseDirectory;
+                MT4Proxy.NET.Program.Start(args);
+            }
+            catch(Exception e)
+            {
+                EventLog evt = new EventLog("MT4Proxy.NET");
+                evt.Source = "MT4Proxy.NET";
+
+                evt.WriteEntry(e.StackTrace, EventLogEntryType.Error);
+
+            }
         }
 
         protected override void OnStop()

@@ -87,9 +87,8 @@
     <Compile Include="Core\ZmqServer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Service\Equity.cs" />
     <Compile Include="Service\OpenAccount.cs" />
-    <Compile Include="Service\Trade.cs" />
+    <Compile Include="Service\Pay.cs" />
     <Compile Include="Test\monkey.cs" />
   </ItemGroup>
   <ItemGroup>

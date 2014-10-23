@@ -8,6 +8,7 @@ using MT4CliWrapper;
 using System.Threading;
 using System.Diagnostics;
 using NLog;
+using NLog.Internal;
 
 namespace MT4Proxy.NET.Core
 {
@@ -76,7 +77,6 @@ namespace MT4Proxy.NET.Core
                 {
                     logger.Trace(string.Format("临时MT4池闲置:{0},会话MT4池闲置:{1}", _idel.Count, Poll.Keys.Count()));
                     Process proc = Process.GetCurrentProcess();
-                    long usedMemory = proc.PrivateMemorySize64;
                     MT4API fetch = null;
                     var templst = new List<MT4API>();
                     var count = _idel.Count;
@@ -122,7 +122,12 @@ namespace MT4Proxy.NET.Core
 
         public static void init()
         {
-            MT4Wrapper.init();
+            var config = new ConfigurationManager();
+            var mt4Host = config.AppSettings["mt4_host"];
+            var mt4Port = int.Parse(config.AppSettings["mt4_port"]);
+            var mt4User = int.Parse(config.AppSettings["mt4_user"]);
+            var mt4Paawd = config.AppSettings["mt4_passwd"];
+            MT4Wrapper.init(string.Format("{0}:{1}", mt4Host, mt4Port), mt4User, mt4Paawd);
             var thDog = new Thread(DogProc);
             thDog.IsBackground = true;
             thDog.Start();

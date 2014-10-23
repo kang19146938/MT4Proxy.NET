@@ -3,7 +3,7 @@
 using namespace System;
 using namespace System::Runtime::InteropServices;
 
-#define TO_CHARS(SOURCE,TARGET) String^ SOURCE = this->SOURCE;memcpy(TARGET.SOURCE, marshal_as<std::string, String^>(SOURCE).c_str(), sizeof(TARGET.SOURCE));
+#define TO_CHARS(SOURCE,TARGET) if(SOURCE) {String^ SOURCE = this->SOURCE;memcpy(TARGET.SOURCE, marshal_as<std::string, String^>(SOURCE).c_str(), sizeof(TARGET.SOURCE));}
 
 [StructLayoutAttribute(LayoutKind::Sequential)]
 public value struct MarginLevelArgs

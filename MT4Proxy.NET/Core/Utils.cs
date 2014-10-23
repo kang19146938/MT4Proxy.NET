@@ -1,4 +1,5 @@
 ﻿using MT4CliWrapper;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,11 +33,10 @@ namespace MT4Proxy.NET.Core
             return origin.AddSeconds(aTime32);
         }
 
-        public static string GetErrorMessage(int errCode)
+        public static string GetErrorMessage(RET_CODE errCode)
         {
-            var code = (RET_CODE)errCode;
             string errMsg;
-            switch (code)
+            switch (errCode)
             {
                 case RET_CODE.RET_OK:
                     errMsg = "正确";

@@ -15,7 +15,7 @@ namespace MT4CliWrapper {
 	public ref class MT4Wrapper
 	{
 	public:
-		static void init();
+		static void init(String^ serverAddr, int user, String^ passwd);
 		static void uninit();
 		MT4Wrapper();
 		~MT4Wrapper();
@@ -25,10 +25,10 @@ namespace MT4CliWrapper {
 		bool ConnectDirect();
 		bool ConnectDirect(String^ server, int managerAccount, String^ password);
 	public: //APIs
-		int TradeTransaction(TradeTransInfoArgs);
-		int MarginLevelRequest(const int login, MarginLevelArgs% level);
+		RET_CODE TradeTransaction(TradeTransInfoArgs);
+		RET_CODE MarginLevelRequest(const int login, MarginLevelArgs% level);
 		array<TradeRecordResult>^ UserRecordsRequest(const int logins, int from, int to);
-		int UserRecordNew(UserRecordArgs aArgs);
+		RET_CODE UserRecordNew(UserRecordArgs aArgs);
 	public: //Utils
 		static event LogResponse^ OnLog;
 	private:
@@ -41,8 +41,8 @@ namespace MT4CliWrapper {
 		CManagerInterface* m_pManagerDirect;
 		CManagerInterface* m_pManagerPumping;
 
-		System::String^ m_MT4Server;
-		int m_MT4ManagerAccount;
-		String^ m_MT4ManagerPassword;
+		static String^ m_MT4Server;
+		static int m_MT4ManagerAccount;
+		static String^ m_MT4ManagerPassword;
 	};
 }

@@ -17,6 +17,23 @@ namespace MT4Proxy.NET
         public static void Main(string[] args)
         {
             Logger logger = LogManager.GetLogger("common");
+            logger.Warn("警告现在使用一般启动方式，建议使用Windows服务模式启动");
+            Boot();
+            logger.Info("启动完成，按任意键退出");
+            Console.Read();
+            Poll.uninit();
+        }
+
+        public static void Start(string[] args)
+        {
+            Logger logger = LogManager.GetLogger("common");
+            logger.Info("检测到使用Windows服务模式启动");
+            Boot();
+        }
+
+        private static void Boot()
+        {
+            Logger logger = LogManager.GetLogger("common");
             MT4CliWrapper.MT4Wrapper.OnLog += (a) => { logger.Info(a); };
             if (Environment.Is64BitProcess)
                 logger.Warn("警告，在64位环境启动");
@@ -28,9 +45,7 @@ namespace MT4Proxy.NET
             RedisServer.Init();
             logger.Info("准备启动zmq监听服务");
             ZmqServer.Init();
-            logger.Info("启动完成，按任意键退出");
-            Console.Read();
-            Poll.uninit();
+            logger.Info("初始工作已完成");
         }
 
         public static void Stop()

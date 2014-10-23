@@ -3,8 +3,11 @@
 #include "MT4Wrapper.h"
 using namespace MT4CliWrapper;
 
-void MT4Wrapper::init()
+void MT4Wrapper::init(String^ serverAddr, int user, String^ passwd)
 {
+	m_MT4Server = serverAddr;
+	m_MT4ManagerAccount = user;
+	m_MT4ManagerPassword = passwd;
 	m_ManagerFactory = new CManagerFactory("mtmanapi.dll");
 	m_ManagerFactory->WinsockStartup();
 }
@@ -27,7 +30,7 @@ MT4Wrapper::MT4Wrapper()
 		std::string strError = "Failed to create MetaTrader 4 Manager API interface.";
 		Log(strError);
 	}
-	ConnectDirect("202.65.221.52:443", 55800, "elex1234");
+	ConnectDirect(m_MT4Server, m_MT4ManagerAccount, m_MT4ManagerPassword);
 }
 
 MT4Wrapper::~MT4Wrapper()
@@ -97,12 +100,12 @@ void MT4Wrapper::Log(std::string aLog)
 	Log(log);
 }
 
-int MT4Wrapper::TradeTransaction(TradeTransInfoArgs aArgs)
+RET_CODE MT4Wrapper::TradeTransaction(TradeTransInfoArgs aArgs)
 {
-	return m_pManagerDirect->TradeTransaction(&aArgs.ToNative());
+	return (RET_CODE)m_pManagerDirect->TradeTransaction(&aArgs.ToNative());
 }
 
-int MT4Wrapper::MarginLevelRequest(const int login, MarginLevelArgs% level)
+RET_CODE MT4Wrapper::MarginLevelRequest(const int login, MarginLevelArgs% level)
 {
 	MarginLevel n_level = MarginLevel();
 	memset(&n_level, 0, sizeof(n_level));
@@ -111,7 +114,7 @@ int MT4Wrapper::MarginLevelRequest(const int login, MarginLevelArgs% level)
 	{
 		level.FromNative(n_level);
 	}
-	return ret;
+	return (RET_CODE)ret;
 }
 
 array<TradeRecordResult>^ MT4Wrapper::UserRecordsRequest(const int logins, int from, int to)
@@ -133,12 +136,12 @@ array<TradeRecordResult>^ MT4Wrapper::UserRecordsRequest(const int logins, int f
 	return result;
 }
 
-int MT4Wrapper::UserRecordNew(UserRecordArgs aArgs)
+RET_CODE MT4Wrapper::UserRecordNew(UserRecordArgs aArgs)
 {
 	int ret = m_pManagerDirect->UserRecordNew(&aArgs.ToNative());
 	if (ret != RET_OK)
 	{
 		printf("%s\n", m_pManagerDirect->ErrorDescription(ret));
 	}
-	return ret;
+	return (RET_CODE)ret;
 }
