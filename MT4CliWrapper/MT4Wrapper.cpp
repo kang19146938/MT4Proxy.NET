@@ -3,6 +3,7 @@
 #include "MT4Wrapper.h"
 using namespace MT4CliWrapper;
 
+
 void MT4Wrapper::init(String^ serverAddr, int user, String^ passwd)
 {
 	m_MT4Server = serverAddr;
@@ -144,4 +145,21 @@ RET_CODE MT4Wrapper::UserRecordNew(UserRecordArgs aArgs)
 		printf("%s\n", m_pManagerDirect->ErrorDescription(ret));
 	}
 	return (RET_CODE)ret;
+}
+
+TradeRecordResult MT4Wrapper::AdmTradesRequest(int orderID, bool open_only)
+{
+	String^ order = String::Format("#{0}", orderID);
+	const char* orderName = marshal_as<std::string, System::String^>(order).c_str();
+	int resultTotal = 0;
+	TradeRecord* ret = m_pManagerDirect->AdmTradesRequest(orderName, open_only ? 1 : 0, &resultTotal);
+	TradeRecordResult result = TradeRecordResult();
+	if (resultTotal == 1)
+		result.FromNative(ret);
+	if (ret)
+	{
+		m_pManagerDirect->MemFree(ret);
+		ret = nullptr;
+	}
+	return result;
 }

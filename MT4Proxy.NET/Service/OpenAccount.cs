@@ -1,12 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using MT4Proxy.NET.Core;
 using System.Dynamic;
-using Newtonsoft.Json.Linq;
 using MT4CliWrapper;
 
 namespace MT4Proxy.NET.Service

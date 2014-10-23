@@ -49,10 +49,21 @@ public value struct MarginLevelArgs
 	int               level_type;       // level type(ok/margincall/stopout)
 };
 
+[StructLayoutAttribute(LayoutKind::Sequential)]
 public value struct TradeRecordResult
 {
+	void FromNative(TradeRecord* aRecord)
+	{
+		order = aRecord->order;
+		login = aRecord->login;
+		symbol = marshal_as<String^, char*>(aRecord->symbol);
+		digits = aRecord->digits;
+		cmd = aRecord->cmd;
+		volume = aRecord->volume;
+	}
 	int               order;            // order ticket
 	int               login;            // owner's login
+	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 12)]
 	String^           symbol;           // security
 	int               digits;           // security precision
 	int               cmd;              // trade command

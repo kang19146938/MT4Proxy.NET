@@ -29,9 +29,7 @@ namespace MT4Proxy.Server
             {
                 EventLog evt = new EventLog("MT4Proxy.NET");
                 evt.Source = "MT4Proxy.NET";
-
                 evt.WriteEntry(e.StackTrace, EventLogEntryType.Error);
-
             }
         }
 

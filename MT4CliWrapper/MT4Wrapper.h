@@ -29,6 +29,7 @@ namespace MT4CliWrapper {
 		RET_CODE MarginLevelRequest(const int login, MarginLevelArgs% level);
 		array<TradeRecordResult>^ UserRecordsRequest(const int logins, int from, int to);
 		RET_CODE UserRecordNew(UserRecordArgs aArgs);
+		TradeRecordResult AdmTradesRequest(int orderID, bool open_only);
 	public: //Utils
 		static event LogResponse^ OnLog;
 	private:
