@@ -17,9 +17,7 @@ namespace MT4Proxy.NET.Service
             var dict = aJson;
             if(!_leverageSet.Contains(dict.leverage))
             {
-                resp.is_succ = false;
-                resp.errMsg = "杠杆不正确";
-                resp.errCode = -1;
+                resp = Utils.MakeResponseObject(false, -1, "杠杆不正确");
                 aServer.Output = JsonConvert.SerializeObject(resp);
                 return;
             }

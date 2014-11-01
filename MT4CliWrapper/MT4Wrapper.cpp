@@ -28,7 +28,7 @@ MT4Wrapper::MT4Wrapper()
 		|| (m_pManagerDirect = m_ManagerFactory->Create(ManAPIVersion)) == nullptr
 		|| (m_pManagerPumping = m_ManagerFactory->Create(ManAPIVersion)) == nullptr)
 	{
-		std::string strError = "Failed to create MetaTrader 4 Manager API interface.";
+		std::string strError = "初始化MT4Manager接口组件失败";
 		Log(strError);
 	}
 	ConnectDirect(m_MT4Server, m_MT4ManagerAccount, m_MT4ManagerPassword);
@@ -67,13 +67,13 @@ bool MT4Wrapper::ConnectDirect()
 		String^ mt4server = m_MT4Server;
 		std::string n_mt4server = marshal_as<std::string, System::String^>(mt4server);
 		int nRet = m_pManagerDirect->Connect(n_mt4server.c_str());
-		Log("ConnectDirect code: " + nRet.ToString());
+		Log("MT4Manager连接返回码: " + nRet.ToString());
 		if (nRet == RET_OK)
 		{
 			String^ password = m_MT4ManagerPassword;
 			std::string n_MT4ManagerPassword = marshal_as<std::string, System::String^>(password);
 			int nRet = m_pManagerDirect->Login(m_MT4ManagerAccount, n_MT4ManagerPassword.c_str());
-			Log("ConnectDirect login code: " + nRet.ToString());
+			Log("MT4Manager登陆返回码: " + nRet.ToString());
 			if (nRet == RET_OK)
 			{
 				return true;
@@ -133,17 +133,14 @@ array<TradeRecordResult>^ MT4Wrapper::UserRecordsRequest(const int logins, int f
 		result[i].symbol = marshal_as<System::String^, std::string>(ret[i].symbol);
 		result[i].volume = ret[i].volume;
 	}
-	m_pManagerDirect->MemFree(ret);
+	if (ret)
+		m_pManagerDirect->MemFree(ret);
 	return result;
 }
 
 RET_CODE MT4Wrapper::UserRecordNew(UserRecordArgs aArgs)
 {
 	int ret = m_pManagerDirect->UserRecordNew(&aArgs.ToNative());
-	if (ret != RET_OK)
-	{
-		printf("%s\n", m_pManagerDirect->ErrorDescription(ret));
-	}
 	return (RET_CODE)ret;
 }
 
@@ -157,9 +154,13 @@ TradeRecordResult MT4Wrapper::AdmTradesRequest(int orderID, bool open_only)
 	if (resultTotal == 1)
 		result.FromNative(ret);
 	if (ret)
-	{
 		m_pManagerDirect->MemFree(ret);
-		ret = nullptr;
-	}
 	return result;
+}
+
+RET_CODE MT4Wrapper::ChangePassword(const int login, String^ password)
+{
+	std::string passwd = marshal_as<std::string, System::String^>(password);
+	int ret = m_pManagerDirect->UserPasswordSet(login, passwd.c_str(), TRUE, FALSE);
+	return (RET_CODE)ret;
 }

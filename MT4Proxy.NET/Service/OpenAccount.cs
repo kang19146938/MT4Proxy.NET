@@ -6,7 +6,7 @@ using MT4CliWrapper;
 
 namespace MT4Proxy.NET.Service
 {
-    [MT4Service(RedisKey = "users:list", EnableRedis = false, EnableZMQ = true)]
+    [MT4Service(EnableZMQ = true)]
     class OpenAccount:IService
     {
         public void OnRequest(IServer aServer, dynamic aJson)

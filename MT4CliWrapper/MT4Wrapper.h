@@ -30,6 +30,7 @@ namespace MT4CliWrapper {
 		array<TradeRecordResult>^ UserRecordsRequest(const int logins, int from, int to);
 		RET_CODE UserRecordNew(UserRecordArgs aArgs);
 		TradeRecordResult AdmTradesRequest(int orderID, bool open_only);
+		RET_CODE ChangePassword(const int login, String^ password);
 	public: //Utils
 		static event LogResponse^ OnLog;
 	private:

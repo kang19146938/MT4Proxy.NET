@@ -6,11 +6,21 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Dynamic;
 
 namespace MT4Proxy.NET.Core
 {
     public static class Utils
     {
+        public static dynamic MakeResponseObject(bool is_succ, int errCode, string errMsg)
+        {
+            dynamic ret = new ExpandoObject();
+            ret.is_succ = is_succ;
+            ret.errCode = errCode;
+            ret.errMsg = errMsg;
+            return ret;
+        }
+
         public static IEnumerable<Type> GetTypesWithServiceAttribute()
         {
             foreach (Type type in Assembly.GetExecutingAssembly().GetTypes())

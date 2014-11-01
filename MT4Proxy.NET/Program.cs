@@ -1,14 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MT4CliWrapper;
-using System.Threading;
 using MT4Proxy.NET.Core;
-using NLog.Internal;
 using NLog;
-
 
 namespace MT4Proxy.NET
 {

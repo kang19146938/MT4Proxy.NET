@@ -81,7 +81,7 @@ namespace MT4Proxy.NET.Core
                 catch(Exception e)
                 {
                     Logger logger = LogManager.GetLogger("clr_error");
-                    logger.Error("处理单个ZMQ请求失败", e);
+                    logger.Error("处理单个ZMQ请求失败", e.StackTrace);
                     socket.Send(string.Empty);
                 }
                 finally
