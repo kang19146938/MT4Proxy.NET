@@ -4,17 +4,28 @@
 using namespace MT4CliWrapper;
 
 
-void MT4Wrapper::init(String^ serverAddr, int user, String^ passwd)
+void MT4Wrapper::init(String^ serverAddr, int user, String^ passwd, 
+	FetchCacheDele^ fetchCache, UpdateCacheDele^ updateCache,
+	FetchCacheDele^ removeCache)
 {
 	m_MT4Server = serverAddr;
 	m_MT4ManagerAccount = user;
 	m_MT4ManagerPassword = passwd;
 	m_ManagerFactory = new CManagerFactory("mtmanapi.dll");
 	m_ManagerFactory->WinsockStartup();
+	PumpDelegate^ pumpDele = gcnew PumpDelegate(PumpCallback);
+	m_hPumpHandle = GCHandle::Alloc(pumpDele);
+	IntPtr ip = Marshal::GetFunctionPointerForDelegate(pumpDele);
+	m_pPumpCallback = static_cast<MTAPI_NOTIFY_FUNC_EX>(ip.ToPointer());
+	UpdateCache = updateCache;
+	FetchCache = fetchCache;
+	RemoveCache = removeCache;
 }
 
 void MT4Wrapper::uninit()
 {
+	m_hPumpHandle.Free();
+	m_pPumpCallback = nullptr;
 	if (m_ManagerFactory)
 	{
 		delete m_ManagerFactory;
@@ -22,16 +33,32 @@ void MT4Wrapper::uninit()
 	}
 }
 
-MT4Wrapper::MT4Wrapper()
+MT4Wrapper::MT4Wrapper(bool aPump)
 {
-	if (!m_ManagerFactory->IsValid()
-		|| (m_pManagerDirect = m_ManagerFactory->Create(ManAPIVersion)) == nullptr
-		|| (m_pManagerPumping = m_ManagerFactory->Create(ManAPIVersion)) == nullptr)
+	if (!m_ManagerFactory->IsValid())
 	{
 		std::string strError = "初始化MT4Manager接口组件失败";
 		Log(strError);
 	}
-	ConnectDirect(m_MT4Server, m_MT4ManagerAccount, m_MT4ManagerPassword);
+	if (!aPump && (m_pManagerDirect = m_ManagerFactory->Create(ManAPIVersion)) == nullptr)
+	{
+		std::string strError = "初始化MT4Direct接口组件失败";
+		Log(strError);
+	}
+	else if (!aPump)
+	{
+		ConnectDirect();
+	}
+	if (aPump && (m_pManagerPumping = m_ManagerFactory->Create(ManAPIVersion)) == nullptr)
+	{
+		std::string strError = "初始化MT4Pump接口组件失败";
+		Log(strError);
+	}
+	else if (aPump)
+	{
+		ConnectPump();
+	}
+	
 }
 
 MT4Wrapper::~MT4Wrapper()
@@ -53,6 +80,9 @@ void MT4Wrapper::Release()
 	}
 	if (m_pManagerPumping != nullptr)
 	{
+		auto remove = RemoveCache;
+		if (remove != nullptr)
+			remove(IntPtr(m_pManagerPumping));
 		m_pManagerPumping->Release();
 		m_pManagerPumping = nullptr;
 	}
@@ -67,13 +97,13 @@ bool MT4Wrapper::ConnectDirect()
 		String^ mt4server = m_MT4Server;
 		std::string n_mt4server = marshal_as<std::string, System::String^>(mt4server);
 		int nRet = m_pManagerDirect->Connect(n_mt4server.c_str());
-		Log("MT4Manager连接返回码: " + nRet.ToString());
+		Log("MT4Direct连接返回码: " + nRet.ToString());
 		if (nRet == RET_OK)
 		{
 			String^ password = m_MT4ManagerPassword;
 			std::string n_MT4ManagerPassword = marshal_as<std::string, System::String^>(password);
 			int nRet = m_pManagerDirect->Login(m_MT4ManagerAccount, n_MT4ManagerPassword.c_str());
-			Log("MT4Manager登陆返回码: " + nRet.ToString());
+			Log("MT4Direct登陆返回码: " + nRet.ToString());
 			if (nRet == RET_OK)
 			{
 				return true;
@@ -83,12 +113,41 @@ bool MT4Wrapper::ConnectDirect()
 	return false;
 }
 
-bool MT4Wrapper::ConnectDirect(String^ server, int managerAccount, String^ password)
+bool MT4Wrapper::ConnectPump()
 {
-	m_MT4Server = server;
-	m_MT4ManagerAccount = managerAccount;
-	m_MT4ManagerPassword = password;
-	return ConnectDirect();
+	if (m_pManagerPumping)
+	{
+		if (m_pManagerPumping->IsConnected())
+			m_pManagerPumping->Disconnect();
+		String^ mt4server = m_MT4Server;
+		std::string n_mt4server = marshal_as<std::string, System::String^>(mt4server);
+		int nRet = m_pManagerPumping->Connect(n_mt4server.c_str());
+		Log("MT4Pump连接返回码: " + nRet.ToString());
+		if (nRet == RET_OK)
+		{
+			String^ password = m_MT4ManagerPassword;
+			std::string n_MT4ManagerPassword = marshal_as<std::string, System::String^>(password);
+			int nRet = m_pManagerPumping->Login(m_MT4ManagerAccount, n_MT4ManagerPassword.c_str());
+			Log("MT4Pump登陆返回码: " + nRet.ToString());
+			if (nRet == RET_OK)
+			{
+				auto key = IntPtr(m_pManagerPumping);
+				auto update = UpdateCache;
+				if (update != nullptr)
+					update(key, this);
+				m_pManagerPumping->PumpingSwitchEx(m_pPumpCallback, 0, m_pManagerPumping);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool MT4Wrapper::IsPumpAlive()
+{
+	if (m_pManagerPumping && m_pManagerPumping->IsConnected())
+		return true;
+	return false;
 }
 
 void MT4Wrapper::Log(String^ aLog)
@@ -99,6 +158,29 @@ void MT4Wrapper::Log(std::string aLog)
 {
 	String^ log = marshal_as<System::String^, std::string>(aLog);
 	Log(log);
+}
+
+int MT4Wrapper::PumpCallback(int code, int type, void *data, void *param)
+{
+	auto key = IntPtr(param);
+	MT4Wrapper^ value = nullptr;
+	auto fetch = FetchCache;
+	if (fetch != nullptr)
+		value = (MT4Wrapper^)fetch(key);
+	else
+		Log(String::Format("pump推送找不到缓存的会话"));
+	if (code == PUMP_UPDATE_TRADES && data != NULL)
+	{
+		TradeRecord *trade = (TradeRecord*)data;
+		if (type == TRANS_DELETE && value)
+		{
+			TradeRecordResult result;
+			result.FromNative(trade);
+			if (value)
+				value->OnPumpTrade((TRANS_TYPE)type, result);
+		}
+	}
+	return TRUE;
 }
 
 RET_CODE MT4Wrapper::TradeTransaction(TradeTransInfoArgs aArgs)

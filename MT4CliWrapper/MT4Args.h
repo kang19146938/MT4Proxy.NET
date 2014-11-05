@@ -4,6 +4,7 @@ using namespace System;
 using namespace System::Runtime::InteropServices;
 
 #define TO_CHARS(SOURCE,TARGET) if(SOURCE) {String^ SOURCE = this->SOURCE;memcpy(TARGET.SOURCE, marshal_as<std::string, String^>(SOURCE).c_str(), sizeof(TARGET.SOURCE));}
+#define FIELD_COPY(SOURCE,TARGET) TARGET = SOURCE->TARGET;
 
 [StructLayoutAttribute(LayoutKind::Sequential)]
 public value struct MarginLevelArgs
@@ -54,12 +55,34 @@ public value struct TradeRecordResult
 {
 	void FromNative(TradeRecord* aRecord)
 	{
-		order = aRecord->order;
-		login = aRecord->login;
+		FIELD_COPY(aRecord, order);
+		FIELD_COPY(aRecord, login);
 		symbol = marshal_as<String^, char*>(aRecord->symbol);
-		digits = aRecord->digits;
-		cmd = aRecord->cmd;
-		volume = aRecord->volume;
+		FIELD_COPY(aRecord, digits);
+		FIELD_COPY(aRecord, cmd);
+		FIELD_COPY(aRecord, volume);
+		FIELD_COPY(aRecord, open_time);
+		FIELD_COPY(aRecord, state);
+		FIELD_COPY(aRecord, open_price);
+		FIELD_COPY(aRecord, sl);
+		FIELD_COPY(aRecord, tp);
+		FIELD_COPY(aRecord, close_time);
+		FIELD_COPY(aRecord, value_date);
+		FIELD_COPY(aRecord, expiration);
+		FIELD_COPY(aRecord, reason);
+		FIELD_COPY(aRecord, commission);
+		FIELD_COPY(aRecord, commission_agent);
+		FIELD_COPY(aRecord, storage);
+		FIELD_COPY(aRecord, close_price);
+		FIELD_COPY(aRecord, profit);
+		FIELD_COPY(aRecord, taxes);
+		FIELD_COPY(aRecord, magic);
+		comment = marshal_as<String^, char*>(aRecord->comment);
+		FIELD_COPY(aRecord, internal_id);
+		FIELD_COPY(aRecord, activation);
+		FIELD_COPY(aRecord, spread);
+		FIELD_COPY(aRecord, margin_rate);
+		FIELD_COPY(aRecord, timestamp);
 	}
 	int               order;            // order ticket
 	int               login;            // owner's login
@@ -68,6 +91,30 @@ public value struct TradeRecordResult
 	int               digits;           // security precision
 	int               cmd;              // trade command
 	int               volume;           // volume
+
+	__time32_t        open_time;        // open time
+	int               state;            // reserved
+	double            open_price;       // open price
+	double            sl, tp;            // stop loss & take profit
+	__time32_t        close_time;       // close time
+	__time32_t        value_date;       // value date
+	__time32_t        expiration;       // pending order's expiration time
+	char              reason;           // trade reason
+	// (first element-for open time, second element-for close time)
+	double            commission;       // commission
+	double            commission_agent; // agent commission
+	double            storage;          // order swaps
+	double            close_price;      // close price
+	double            profit;           // profit
+	double            taxes;            // taxes
+	int               magic;            // special value used by client experts
+	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 32)]
+	String^           comment;      // comment
+	int               internal_id;      // trade order ticket on master server in STP
+	int               activation;       // used by MT Manager
+	int               spread;           // spread
+	double            margin_rate;      // margin convertation rate (rate of convertation from margin currency to deposit one)
+	__time32_t        timestamp;        // timestamp
 };
 
 [StructLayoutAttribute(LayoutKind::Sequential)]
@@ -166,4 +213,46 @@ public value struct TradeTransInfoArgs
 	String^              comment;      // comment
 	__time32_t           expiration;       // pending order expiration time
 	int                  crc;              // crc
+};
+
+[StructLayoutAttribute(LayoutKind::Sequential)]
+public value struct SymbolInfoResult
+{
+	void FromNative(SymbolInfo* aRecord)
+	{
+		symbol = marshal_as<String^, char*>(aRecord->symbol);
+		digits = aRecord->digits;
+		count = aRecord->count;
+		visible = aRecord->visible;
+		type = aRecord->type;
+		point = aRecord->point;
+		spread = aRecord->spread;
+		spread_balance = aRecord->spread_balance;
+		direction = aRecord->direction;
+		updateflag = aRecord->updateflag;
+		lasttime = aRecord->lasttime;
+		bid = aRecord->bid;
+		ask = aRecord->ask;
+		high = aRecord->high;
+		low = aRecord->low;
+		commission = aRecord->commission;
+		comm_type = aRecord->comm_type;
+	}
+
+	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 12)]
+	String^           symbol;
+	int               digits;
+	int               count;
+	int               visible;
+	int               type;
+	double            point;
+	int               spread;
+	int               spread_balance;
+	int               direction;
+	int               updateflag;
+	__time32_t        lasttime;
+	double            bid, ask;
+	double            high, low;
+	double            commission;
+	int               comm_type;
 };

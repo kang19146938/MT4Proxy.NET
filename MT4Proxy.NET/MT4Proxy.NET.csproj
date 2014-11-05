@@ -54,6 +54,9 @@
     <Reference Include="Castle.Zmq">
       <HintPath>..\packages\Castle.Zmq.4.0.1\lib\net40\Castle.Zmq.dll</HintPath>
     </Reference>
+    <Reference Include="MySql.Data">
+      <HintPath>..\packages\MySql.Data.6.9.3\lib\net45\MySql.Data.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Newtonsoft.Json.6.0.5\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -81,6 +84,7 @@
     <Compile Include="Core\IServer.cs" />
     <Compile Include="Core\IService.cs" />
     <Compile Include="Core\MT4API.cs" />
+    <Compile Include="Core\MT4Pump.cs" />
     <Compile Include="Core\Poll.cs" />
     <Compile Include="Core\RedisServer.cs" />
     <Compile Include="Core\MT4ServiceAttribute.cs" />
@@ -92,7 +96,6 @@
     <Compile Include="Service\OpenAccount.cs" />
     <Compile Include="Service\Pay.cs" />
     <Compile Include="Service\Trade.cs" />
-    <Compile Include="Test\monkey.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -137,6 +140,9 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Test\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

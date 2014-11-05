@@ -33,6 +33,8 @@ namespace MT4Proxy.NET
                 logger.Info("启动环境是32位");
             logger.Info("准备启动MT4池");
             Poll.init();
+            MT4Pump.StartPump();
+            return;
             logger.Info("准备启动redis监听服务");
             RedisServer.Init();
             logger.Info("准备启动zmq监听服务");

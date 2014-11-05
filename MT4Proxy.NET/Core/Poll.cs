@@ -127,7 +127,8 @@ namespace MT4Proxy.NET.Core
             var mt4Port = int.Parse(config.AppSettings["mt4_port"]);
             var mt4User = int.Parse(config.AppSettings["mt4_user"]);
             var mt4Paawd = config.AppSettings["mt4_passwd"];
-            MT4Wrapper.init(string.Format("{0}:{1}", mt4Host, mt4Port), mt4User, mt4Paawd);
+            var pumpCount = int.Parse(config.AppSettings["pump_count"]);
+            MT4API.init(string.Format("{0}:{1}", mt4Host, mt4Port), mt4User, mt4Paawd, pumpCount);
             var thDog = new Thread(DogProc);
             thDog.IsBackground = true;
             thDog.Start();
