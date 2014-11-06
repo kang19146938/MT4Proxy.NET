@@ -221,22 +221,22 @@ public value struct SymbolInfoResult
 	void FromNative(SymbolInfo* aRecord)
 	{
 		symbol = marshal_as<String^, char*>(aRecord->symbol);
-		digits = aRecord->digits;
-		count = aRecord->count;
-		visible = aRecord->visible;
-		type = aRecord->type;
-		point = aRecord->point;
-		spread = aRecord->spread;
-		spread_balance = aRecord->spread_balance;
-		direction = aRecord->direction;
-		updateflag = aRecord->updateflag;
-		lasttime = aRecord->lasttime;
-		bid = aRecord->bid;
-		ask = aRecord->ask;
-		high = aRecord->high;
-		low = aRecord->low;
-		commission = aRecord->commission;
-		comm_type = aRecord->comm_type;
+		FIELD_COPY(aRecord,digits);
+		FIELD_COPY(aRecord,count);
+		FIELD_COPY(aRecord,visible);
+		FIELD_COPY(aRecord,type);
+		FIELD_COPY(aRecord,point);
+		FIELD_COPY(aRecord,spread);
+		FIELD_COPY(aRecord,spread_balance);
+		FIELD_COPY(aRecord,direction);
+		FIELD_COPY(aRecord,updateflag);
+		FIELD_COPY(aRecord,lasttime);
+		FIELD_COPY(aRecord,bid);
+		FIELD_COPY(aRecord,ask);
+		FIELD_COPY(aRecord,high);
+		FIELD_COPY(aRecord,low);
+		FIELD_COPY(aRecord,commission);
+		FIELD_COPY(aRecord,comm_type);
 	}
 
 	[MarshalAs(UnmanagedType::ByValTStr, SizeConst = 12)]

@@ -97,17 +97,24 @@ bool MT4Wrapper::ConnectDirect()
 		String^ mt4server = m_MT4Server;
 		std::string n_mt4server = marshal_as<std::string, System::String^>(mt4server);
 		int nRet = m_pManagerDirect->Connect(n_mt4server.c_str());
-		Log("MT4Direct连接返回码: " + nRet.ToString());
+		
 		if (nRet == RET_OK)
 		{
 			String^ password = m_MT4ManagerPassword;
 			std::string n_MT4ManagerPassword = marshal_as<std::string, System::String^>(password);
 			int nRet = m_pManagerDirect->Login(m_MT4ManagerAccount, n_MT4ManagerPassword.c_str());
-			Log("MT4Direct登陆返回码: " + nRet.ToString());
 			if (nRet == RET_OK)
 			{
 				return true;
 			}
+			else
+			{
+				Log("MT4Direct登陆返回码: " + nRet.ToString());
+			}
+		}
+		else
+		{
+			Log("MT4Direct连接返回码: " + nRet.ToString());
 		}
 	}
 	return false;
@@ -122,13 +129,11 @@ bool MT4Wrapper::ConnectPump()
 		String^ mt4server = m_MT4Server;
 		std::string n_mt4server = marshal_as<std::string, System::String^>(mt4server);
 		int nRet = m_pManagerPumping->Connect(n_mt4server.c_str());
-		Log("MT4Pump连接返回码: " + nRet.ToString());
 		if (nRet == RET_OK)
 		{
 			String^ password = m_MT4ManagerPassword;
 			std::string n_MT4ManagerPassword = marshal_as<std::string, System::String^>(password);
 			int nRet = m_pManagerPumping->Login(m_MT4ManagerAccount, n_MT4ManagerPassword.c_str());
-			Log("MT4Pump登陆返回码: " + nRet.ToString());
 			if (nRet == RET_OK)
 			{
 				auto key = IntPtr(m_pManagerPumping);
@@ -138,6 +143,14 @@ bool MT4Wrapper::ConnectPump()
 				m_pManagerPumping->PumpingSwitchEx(m_pPumpCallback, 0, m_pManagerPumping);
 				return true;
 			}
+			else
+			{
+				Log("MT4Pump登陆返回码: " + nRet.ToString());
+			}
+		}
+		else
+		{
+			Log("MT4Pump连接返回码: " + nRet.ToString());
 		}
 	}
 	return false;
@@ -162,23 +175,45 @@ void MT4Wrapper::Log(std::string aLog)
 
 int MT4Wrapper::PumpCallback(int code, int type, void *data, void *param)
 {
+	static SymbolInfo pSymbolInfos[64];
 	auto key = IntPtr(param);
 	MT4Wrapper^ value = nullptr;
 	auto fetch = FetchCache;
 	if (fetch != nullptr)
+	{
 		value = (MT4Wrapper^)fetch(key);
+		if (!value)
+		{
+			return TRUE;
+		}
+	}
 	else
-		Log(String::Format("pump推送找不到缓存的会话"));
+	{
+		Log(String::Format("pump推送缓存系统未实现"));
+		return TRUE;
+	}
 	if (code == PUMP_UPDATE_TRADES && data != NULL)
 	{
 		TradeRecord *trade = (TradeRecord*)data;
-		if (type == TRANS_DELETE && value)
+		if (type == TRANS_ADD || type == TRANS_DELETE)
 		{
 			TradeRecordResult result;
 			result.FromNative(trade);
 			if (value)
 				value->OnPumpTrade((TRANS_TYPE)type, result);
 		}
+	}
+	if (code == PUMP_UPDATE_BIDASK)
+	{
+		int total = value->m_pManagerPumping->SymbolInfoUpdated(pSymbolInfos, 64);
+		auto clrItems = gcnew array<SymbolInfoResult>(total);
+		for (int i = 0; i < total; i++)
+		{
+			auto clrItem = SymbolInfoResult();
+			clrItem.FromNative(&pSymbolInfos[i]);
+			clrItems[i] = clrItem;
+		}
+		value->OnPumpAskBid(clrItems);
 	}
 	return TRUE;
 }

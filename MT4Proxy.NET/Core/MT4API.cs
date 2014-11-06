@@ -72,7 +72,17 @@ namespace MT4Proxy.NET.Core
 
         protected override void OnPumpTrade(TRANS_TYPE aType, TradeRecordResult aRecord)
         {
-            //Console.WriteLine("order:{0}", JsonConvert.SerializeObject(aRecord));
+            MT4Pump.PushTrade(aType, aRecord);
+        }
+
+        protected override void OnPumpAskBid(SymbolInfoResult[] aSymbols)
+        {
+            /*
+            foreach(var i in aSymbols)
+            {
+                if(i.symbol.Contains("USDCHF"))
+                    Console.WriteLine("USDCHF,{0},{1},{2}", i.ask, i.bid, i.lasttime.FromTime32());
+            }*/
         }
 
         private static object FetchCache(IntPtr aKey)
@@ -91,7 +101,6 @@ namespace MT4Proxy.NET.Core
         {
             object nouse = null;
             _dictCache.TryRemove(aKey, out nouse);
-            Console.WriteLine("pong {0}", nouse);
             return nouse;
         }
 

@@ -45,6 +45,7 @@ namespace MT4CliWrapper {
 		static event LogResponse^ OnLog;
 	protected: //Pump callback
 		virtual void OnPumpTrade(TRANS_TYPE, TradeRecordResult){ }
+		virtual void OnPumpAskBid(array<SymbolInfoResult>^){ }
 	private:
 		static UpdateCacheDele^ UpdateCache;
 		static FetchCacheDele^ FetchCache;

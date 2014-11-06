@@ -11,13 +11,13 @@ using namespace System::Security::Permissions;
 // 控制。更改这些特性值可修改
 // 与程序集关联的信息。
 //
-[assembly:AssemblyTitleAttribute(L"FTSCppWarpper")];
+[assembly:AssemblyTitleAttribute(L"FTS C++/Cli MT4 manager API warpper")];
 [assembly:AssemblyDescriptionAttribute(L"")];
 [assembly:AssemblyConfigurationAttribute(L"")];
-[assembly:AssemblyCompanyAttribute(L"")];
-[assembly:AssemblyProductAttribute(L"FTSCppWarpper")];
+[assembly:AssemblyCompanyAttribute(L"Tigerwit")];
+[assembly:AssemblyProductAttribute(L"Tigerwit")];
 [assembly:AssemblyCopyrightAttribute(L"Copyright (c)  2014")];
-[assembly:AssemblyTrademarkAttribute(L"")];
+[assembly:AssemblyTrademarkAttribute(L"Tigerwit")];
 [assembly:AssemblyCultureAttribute(L"")];
 
 //
@@ -31,7 +31,7 @@ using namespace System::Security::Permissions;
 // 您可以指定所有值，也可以使用“修订号”和“生成号”的默认值，
 // 方法是按如下所示使用“*”: 
 
-[assembly:AssemblyVersionAttribute("1.0.*")];
+[assembly:AssemblyVersionAttribute("1.1.*")];
 
 [assembly:ComVisible(false)];
 
