@@ -41,6 +41,7 @@ namespace MT4CliWrapper {
 		RET_CODE UserRecordNew(UserRecordArgs aArgs);
 		TradeRecordResult AdmTradesRequest(int orderID, bool open_only);
 		RET_CODE ChangePassword(const int login, String^ password);
+		RET_CODE GetEquity(int login, Double%);
 	public: //Events & callbacks
 		static event LogResponse^ OnLog;
 	protected: //Pump callback

@@ -12,10 +12,13 @@ namespace MT4Proxy.NET
         {
             Logger logger = LogManager.GetLogger("common");
             logger.Warn("警告现在使用一般启动方式，建议使用Windows服务模式启动");
-            Boot(args);
-            logger.Info("启动完成，按任意键退出");
-            Console.Read();
-            Poll.uninit();
+            var result = Boot(args);
+            if (result)
+            {
+                logger.Info("启动完成，按任意键退出");
+                Console.Read();
+                Poll.uninit();
+            }
         }
 
         public static void Start(string[] args)
@@ -25,33 +28,25 @@ namespace MT4Proxy.NET
             Boot(args);
         }
 
-        private static void Boot(string[] args)
+        private static bool Boot(string[] args)
         {
             Environment.CurrentDirectory = System.AppDomain.CurrentDomain.BaseDirectory;
 
             bool help = false;
-            DateTime? fromTime = null;
-            TimeSpan? period = null;
+            bool sync = false;
             var p = new OptionSet() {
-                { "sync|s=",  (int v) => fromTime = DateTime.Now.AddMinutes(-v)  },
-                { "period|p=",  (int v) => period = TimeSpan.FromMinutes(v)  },
+                { "sync|s",  v => sync = v != null  },
                 { "h|?|help",   v => help = v != null },
             };
             try
             {
                 List<string> extra = p.Parse(args);
-                if (fromTime == null ^ period == null)
-                    throw new Exception("sync时间或周期设置不正确");
                 if(help)
                 {
                     Console.WriteLine(
-                        string.Format("无参数:执行MT4Proxy服务\nsync 时间 period 时间:从sync分钟前到前移period分钟内数据同步\nh|?|help:显示帮助信息"));
-                    return;
-                }
-                if(fromTime != null && period != null)
-                {
-                    //do sync
-                    return;
+                        string.Format("无参数:执行MT4Proxy服务\n" + 
+                        "s|sync执行当天数据聚合\nh|?|help:显示帮助信息"));
+                    return false;
                 }
                 Logger logger = LogManager.GetLogger("common");
                 MT4CliWrapper.MT4Wrapper.OnLog += (a) => { logger.Info(a); };
@@ -61,10 +56,16 @@ namespace MT4Proxy.NET
                     logger.Info("启动环境是32位");
                 logger.Info("准备启动MT4池");
                 Poll.init();
-                return;
-                logger.Info("准备启动redis监听服务");
+                if (sync)
+                {
+                    var syncer = new MysqlSyncer();
+                    syncer.SyncEquity();
+                    return false;
+                }
+                return true;
+                logger.Info("准备启动Redis监听服务");
                 RedisServer.Init();
-                logger.Info("准备启动zmq监听服务");
+                logger.Info("准备启动Zmq监听服务");
                 ZmqServer.Init();
                 logger.Info("初始工作已完成");
             }
@@ -73,8 +74,9 @@ namespace MT4Proxy.NET
                 Console.Write("参数格式不正确: ");
                 Console.WriteLine(e.Message);
                 Console.WriteLine("请使用 --help 命令获取更多信息.");
-                return;
+                return false;
             }
+            return true;
         }
 
         public static void Stop()

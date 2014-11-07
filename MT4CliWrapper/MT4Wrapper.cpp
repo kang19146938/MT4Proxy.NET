@@ -182,10 +182,7 @@ int MT4Wrapper::PumpCallback(int code, int type, void *data, void *param)
 	if (fetch != nullptr)
 	{
 		value = (MT4Wrapper^)fetch(key);
-		if (!value)
-		{
-			return TRUE;
-		}
+		if (!value) return TRUE;
 	}
 	else
 	{
@@ -278,6 +275,16 @@ TradeRecordResult MT4Wrapper::AdmTradesRequest(int orderID, bool open_only)
 RET_CODE MT4Wrapper::ChangePassword(const int login, String^ password)
 {
 	std::string passwd = marshal_as<std::string, System::String^>(password);
-	int ret = m_pManagerDirect->UserPasswordSet(login, passwd.c_str(), TRUE, FALSE);
-	return (RET_CODE)ret;
+	int nRet = m_pManagerDirect->UserPasswordSet(login, passwd.c_str(), TRUE, FALSE);
+	return (RET_CODE)nRet;
+}
+
+RET_CODE MT4Wrapper::GetEquity(int login, Double% equity)
+{
+	MarginLevel marginLevel;
+	memset(&marginLevel, 0, sizeof(MarginLevel));
+	int nRet = m_pManagerDirect->MarginLevelRequest(login, &marginLevel);
+	if (nRet == RET_OK)
+		equity = marginLevel.equity;
+	return (RET_CODE)nRet;
 }
