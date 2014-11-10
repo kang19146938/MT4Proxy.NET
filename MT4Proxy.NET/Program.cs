@@ -17,8 +17,8 @@ namespace MT4Proxy.NET
             {
                 logger.Info("启动完成，按任意键退出");
                 Console.Read();
-                Poll.uninit();
             }
+            Poll.uninit();
         }
 
         public static void Start(string[] args)
@@ -60,9 +60,10 @@ namespace MT4Proxy.NET
                 {
                     var syncer = new MysqlSyncer();
                     syncer.SyncEquity();
+                    MT4Pump.EnableRestart = false;
+                    System.Threading.Thread.Sleep(10000);
                     return false;
                 }
-                return true;
                 logger.Info("准备启动Redis监听服务");
                 RedisServer.Init();
                 logger.Info("准备启动Zmq监听服务");
@@ -76,6 +77,11 @@ namespace MT4Proxy.NET
                 Console.WriteLine("请使用 --help 命令获取更多信息.");
                 return false;
             }
+            catch(Exception e)
+            {
+                var logger = LogManager.GetLogger("common");
+                logger.Error(e.StackTrace);
+            }
             return true;
         }
 
@@ -83,6 +89,7 @@ namespace MT4Proxy.NET
         {
             MT4Pump.EnableRestart = false;
             System.Threading.Thread.Sleep(10000);
+            MT4API.uninit();
         }
     }
 }

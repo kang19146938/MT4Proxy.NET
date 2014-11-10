@@ -8,9 +8,9 @@ void MT4Wrapper::init(String^ serverAddr, int user, String^ passwd,
 	FetchCacheDele^ fetchCache, UpdateCacheDele^ updateCache,
 	FetchCacheDele^ removeCache)
 {
-	m_MT4Server = serverAddr;
-	m_MT4ManagerAccount = user;
-	m_MT4ManagerPassword = passwd;
+	m_gMT4Server = serverAddr;
+	m_gMT4ManagerAccount = user;
+	m_gMT4ManagerPassword = passwd;
 	m_ManagerFactory = new CManagerFactory("mtmanapi.dll");
 	m_ManagerFactory->WinsockStartup();
 	PumpDelegate^ pumpDele = gcnew PumpDelegate(PumpCallback);
@@ -40,6 +40,9 @@ MT4Wrapper::MT4Wrapper(bool aPump)
 		std::string strError = "初始化MT4Manager接口组件失败";
 		Log(strError);
 	}
+	m_MT4Server = m_gMT4Server;
+	m_MT4ManagerAccount = m_gMT4ManagerAccount;
+	m_MT4ManagerPassword = m_gMT4ManagerPassword;
 	if (!aPump && (m_pManagerDirect = m_ManagerFactory->Create(ManAPIVersion)) == nullptr)
 	{
 		std::string strError = "初始化MT4Direct接口组件失败";
@@ -58,7 +61,22 @@ MT4Wrapper::MT4Wrapper(bool aPump)
 	{
 		ConnectPump();
 	}
-	
+}
+
+MT4Wrapper::MT4Wrapper(String^ server, int login, String^ passwd)
+{
+	m_MT4Server = server;
+	m_MT4ManagerAccount = login;
+	m_MT4ManagerPassword = passwd;
+	if ((m_pManagerDirect = m_ManagerFactory->Create(ManAPIVersion)) == nullptr)
+	{
+		std::string strError = "初始化MT4Direct接口组件失败";
+		Log(strError);
+	}
+	else
+	{
+		ConnectDirect();
+	}
 }
 
 MT4Wrapper::~MT4Wrapper()
@@ -104,13 +122,9 @@ bool MT4Wrapper::ConnectDirect()
 			std::string n_MT4ManagerPassword = marshal_as<std::string, System::String^>(password);
 			int nRet = m_pManagerDirect->Login(m_MT4ManagerAccount, n_MT4ManagerPassword.c_str());
 			if (nRet == RET_OK)
-			{
 				return true;
-			}
 			else
-			{
 				Log("MT4Direct登陆返回码: " + nRet.ToString());
-			}
 		}
 		else
 		{
@@ -226,9 +240,7 @@ RET_CODE MT4Wrapper::MarginLevelRequest(const int login, MarginLevelArgs% level)
 	memset(&n_level, 0, sizeof(n_level));
 	int ret = m_pManagerDirect->MarginLevelRequest(login, &n_level);
 	if (ret == RET_OK)
-	{
 		level.FromNative(n_level);
-	}
 	return (RET_CODE)ret;
 }
 
@@ -252,7 +264,7 @@ array<TradeRecordResult>^ MT4Wrapper::UserRecordsRequest(const int logins, int f
 	return result;
 }
 
-RET_CODE MT4Wrapper::UserRecordNew(UserRecordArgs aArgs)
+RET_CODE MT4Wrapper::OpenAccount(UserRecordArgs aArgs)
 {
 	int ret = m_pManagerDirect->UserRecordNew(&aArgs.ToNative());
 	return (RET_CODE)ret;

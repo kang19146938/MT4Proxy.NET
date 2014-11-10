@@ -151,7 +151,14 @@ namespace MT4Proxy.NET.Core
         {
             aPump.Timer.Stop();
             if (!EnableRestart)
+            {
+                if(aPump.MT4 != null)
+                {
+                    aPump.MT4.Dispose();
+                    aPump.MT4 = null;
+                }
                 return;
+            }
             int retryTimes = 3;
             var mt4 = new MT4API(true);
             while(retryTimes-- > 0)

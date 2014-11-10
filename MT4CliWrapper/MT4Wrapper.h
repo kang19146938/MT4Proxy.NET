@@ -26,6 +26,7 @@ namespace MT4CliWrapper {
 			FetchCacheDele^ removeCache);
 		static void uninit();
 		MT4Wrapper(bool);
+		MT4Wrapper(String^ server, int login, String^ passwd);
 		~MT4Wrapper();
 		!MT4Wrapper();
 		void Release();
@@ -38,7 +39,7 @@ namespace MT4CliWrapper {
 		RET_CODE TradeTransaction(TradeTransInfoArgs);
 		RET_CODE MarginLevelRequest(const int login, MarginLevelArgs% level);
 		array<TradeRecordResult>^ UserRecordsRequest(const int logins, int from, int to);
-		RET_CODE UserRecordNew(UserRecordArgs aArgs);
+		RET_CODE OpenAccount(UserRecordArgs aArgs);
 		TradeRecordResult AdmTradesRequest(int orderID, bool open_only);
 		RET_CODE ChangePassword(const int login, String^ password);
 		RET_CODE GetEquity(int login, Double%);
@@ -59,9 +60,13 @@ namespace MT4CliWrapper {
 		CManagerInterface* m_pManagerDirect;
 		CManagerInterface* m_pManagerPumping;
 
-		static String^ m_MT4Server;
-		static int m_MT4ManagerAccount;
-		static String^ m_MT4ManagerPassword;
+		String^ m_MT4Server;
+		int m_MT4ManagerAccount;
+		String^ m_MT4ManagerPassword;
+
+		static String^ m_gMT4Server;
+		static int m_gMT4ManagerAccount;
+		static String^ m_gMT4ManagerPassword;
 
 		static GCHandle m_hPumpHandle;
 		static MTAPI_NOTIFY_FUNC_EX m_pPumpCallback;

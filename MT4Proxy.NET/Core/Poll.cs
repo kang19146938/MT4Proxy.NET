@@ -127,8 +127,27 @@ namespace MT4Proxy.NET.Core
             var mt4Port = int.Parse(config.AppSettings["mt4_port"]);
             var mt4User = int.Parse(config.AppSettings["mt4_user"]);
             var mt4Paawd = config.AppSettings["mt4_passwd"];
+            var mt4Group = config.AppSettings["mt4_group"];
+
+            var mt4demoHost = config.AppSettings["mt4demo_host"];
+            var mt4demoPort = int.Parse(config.AppSettings["mt4demo_port"]);
+            var mt4demoUser = int.Parse(config.AppSettings["mt4demo_user"]);
+            var mt4demoPaawd = config.AppSettings["mt4demo_passwd"];
+            var mt4demoGroup = config.AppSettings["mt4demo_group"];
+
             var pumpCount = int.Parse(config.AppSettings["pump_count"]);
             var mysql = config.AppSettings["mysql_cs"];
+
+            MT4Host = string.Format("{0}:{1}", mt4Host, mt4Port);
+            MT4AdminID = mt4User;
+            MT4Passwd = mt4Paawd;
+            MT4Group = mt4Group;
+
+            MT4DemoHost = string.Format("{0}:{1}", mt4demoHost, mt4demoPort);
+            MT4DemoAdminID = mt4demoUser;
+            MT4DemoPasswd = mt4demoPaawd;
+            MT4DemoGroup = mt4demoGroup;
+
             MysqlSyncer.ConnectString = mysql;
             MT4API.init(string.Format("{0}:{1}", mt4Host, mt4Port), mt4User, mt4Paawd, pumpCount);
             MT4Pump.StartPump();
@@ -141,5 +160,29 @@ namespace MT4Proxy.NET.Core
         {
             MT4Wrapper.uninit();
         }
+
+        public static string MT4Host
+        { get; private set; }
+
+        public static int MT4AdminID
+        { get; private set; }
+
+        public static string MT4Passwd
+        { get; private set; }
+
+        public static string MT4Group
+        { get; private set; }
+
+        public static string MT4DemoHost
+        { get; private set; }
+
+        public static int MT4DemoAdminID
+        { get; private set; }
+
+        public static string MT4DemoPasswd
+        { get; private set; }
+
+        public static string MT4DemoGroup
+        { get; private set; }
     }
 }

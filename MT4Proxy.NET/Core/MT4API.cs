@@ -33,10 +33,14 @@ namespace MT4Proxy.NET.Core
         public MT4API(bool aPump):base(aPump)
         { }
 
-        public MT4API():base(false)
+        public MT4API():this(false)
         {
 
         }
+
+        public MT4API(string aHost, int aLogin, string aPasswd)
+            :base(aHost, aLogin, aPasswd)
+        { }
 
         internal static int PumperCount
         {

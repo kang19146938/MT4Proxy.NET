@@ -186,39 +186,43 @@ namespace MT4Proxy.NET.Core
                     }
                 }
             }
-            var mt4 = Poll.New();
-            var dict = new Dictionary<int, double>();
-            double result = 0;
-            foreach(var id in users)
+            using (var mt4 = Poll.New())
             {
-                var status = mt4.GetEquity(id, ref result);
-                if(status != RET_CODE.RET_OK)
+                var dict = new Dictionary<int, double>();
+                double result = 0;
+                foreach (var id in users)
                 {
-                    logger.Error(string.Format(
-                        "同步MT4账户{0}的个人资产信息出现了问题", id));
-                    continue;
-                }
-                dict[id] = result;
-            }
-            sql = "INSERT INTO equity(mt4_id, value) VALUES(@mt4id, @value)" +
-                "ON DUPLICATE KEY UPDATE value = @value";
-            foreach (var kv in dict)
-            {
-                try
-                {
-                    using (var cmd = new MySqlCommand(sql, Connection))
+                    var status = mt4.GetEquity(id, ref result);
+                    if (status != RET_CODE.RET_OK)
                     {
-                        cmd.Parameters.Clear();
-                        cmd.Parameters.AddWithValue("@mt4id", kv.Key);
-                        cmd.Parameters.AddWithValue("@value", kv.Value);
-                        cmd.ExecuteNonQuery();
+                        logger.Error(string.Format(
+                            "同步MT4账户{0}的个人资产信息出现了问题", id));
+                        continue;
                     }
-                    logger.Info(string.Format("已经同步用户{0}的资产", kv.Key));
+                    dict[id] = result;
                 }
-                catch
+                var mt4date = DateTime.UtcNow.AddHours(3).Date;
+                sql = "INSERT INTO equity(mt4_id, date, value) VALUES(@mt4id, @date, @value)" +
+                    "ON DUPLICATE KEY UPDATE value = @value";
+                foreach (var kv in dict)
                 {
-                    logger.Error(string.Format(
-                        "同步MT4账户{0}的个人资产({1})信息出现了问题", kv.Key, kv.Value));
+                    try
+                    {
+                        using (var cmd = new MySqlCommand(sql, Connection))
+                        {
+                            cmd.Parameters.Clear();
+                            cmd.Parameters.AddWithValue("@mt4id", kv.Key);
+                            cmd.Parameters.AddWithValue("@date", mt4date);
+                            cmd.Parameters.AddWithValue("@value", kv.Value);
+                            cmd.ExecuteNonQuery();
+                        }
+                        logger.Info(string.Format("已经同步用户{0}的资产", kv.Key));
+                    }
+                    catch
+                    {
+                        logger.Error(string.Format(
+                            "同步MT4账户{0}的个人资产({1})信息出现了问题", kv.Key, kv.Value));
+                    }
                 }
             }
         }

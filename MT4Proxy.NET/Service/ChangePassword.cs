@@ -1,6 +1,7 @@
 ﻿using MT4CliWrapper;
 using MT4Proxy.NET.Core;
 using Newtonsoft.Json;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -26,7 +27,8 @@ namespace MT4Proxy.NET.Service
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message + e.StackTrace);
+                var logger = LogManager.GetLogger("common");
+                logger.Error(e.Message + e.StackTrace);
             }
         }
     }

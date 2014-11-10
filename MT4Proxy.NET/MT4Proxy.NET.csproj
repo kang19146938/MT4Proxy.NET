@@ -100,12 +100,16 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Service\ChangePassword.cs" />
+    <Compile Include="Service\Equity.cs" />
     <Compile Include="Service\OpenAccount.cs" />
     <Compile Include="Service\Pay.cs" />
     <Compile Include="Service\Trade.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <Content Include="libzmq.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
