@@ -154,6 +154,18 @@ bool MT4Wrapper::ConnectPump()
 				auto update = UpdateCache;
 				if (update != nullptr)
 					update(key, this);
+
+
+				int total = 0;
+				m_pManagerPumping->SymbolsRefresh();
+				ConSymbol* pSymbols = m_pManagerPumping->SymbolsGetAll(&total);
+				array<SymbolInfoResult>^ result = gcnew  array<SymbolInfoResult>(total);
+				for (int i = 0; i< total; i++)
+				{
+					m_pManagerPumping->SymbolAdd(pSymbols[i].symbol);
+				}
+				m_pManagerPumping->MemFree(pSymbols);
+
 				m_pManagerPumping->PumpingSwitchEx(m_pPumpCallback, 0, m_pManagerPumping);
 				return true;
 			}
@@ -216,15 +228,20 @@ int MT4Wrapper::PumpCallback(int code, int type, void *data, void *param)
 	}
 	if (code == PUMP_UPDATE_BIDASK)
 	{
-		int total = value->m_pManagerPumping->SymbolInfoUpdated(pSymbolInfos, 64);
-		auto clrItems = gcnew array<SymbolInfoResult>(total);
-		for (int i = 0; i < total; i++)
+		int total = 0;
+		do
 		{
-			auto clrItem = SymbolInfoResult();
-			clrItem.FromNative(&pSymbolInfos[i]);
-			clrItems[i] = clrItem;
-		}
-		value->OnPumpAskBid(clrItems);
+
+			total = value->m_pManagerPumping->SymbolInfoUpdated(pSymbolInfos, 64);
+			auto clrItems = gcnew array<SymbolInfoResult>(total);
+			for (int i = 0; i < total; i++)
+			{
+				auto clrItem = SymbolInfoResult();
+				clrItem.FromNative(&pSymbolInfos[i]);
+				clrItems[i] = clrItem;
+			}
+			value->OnPumpAskBid(clrItems);
+		} while (total);
 	}
 	return TRUE;
 }
@@ -299,4 +316,29 @@ RET_CODE MT4Wrapper::GetEquity(int login, Double% equity)
 	if (nRet == RET_OK)
 		equity = marginLevel.equity;
 	return (RET_CODE)nRet;
+}
+
+array<SymbolInfoResult>^ MT4Wrapper::AllSymbols()
+{
+	int total = 0;
+	m_pManagerDirect->SymbolsRefresh();
+	ConSymbol* pSymbols = m_pManagerDirect->SymbolsGetAll(&total);
+	array<SymbolInfoResult>^ result = gcnew  array<SymbolInfoResult>(total);
+	for (int i = 0;i< total; i++)
+	{
+		auto item = SymbolInfoResult();
+		item.symbol = marshal_as<String^, char*>(pSymbols[i].symbol);
+		item.ask = pSymbols[i].ask_tickvalue;
+		item.bid = pSymbols[i].bid_tickvalue;
+		result[i] = item;
+	}
+	m_pManagerDirect->MemFree(pSymbols);
+	return result;
+}
+
+int MT4Wrapper::GetUpdatedSymbols(SymbolInfo* pSymbolInfos, int n)
+{
+	if (!m_pManagerPumping)
+		return 0;
+	return m_pManagerPumping->SymbolInfoUpdated(pSymbolInfos, n);
 }

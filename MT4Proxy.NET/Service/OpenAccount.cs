@@ -16,15 +16,15 @@ namespace MT4Proxy.NET.Service
             {
                 var dict = aJson;
                 var api = aServer.MT4;
-                var is_real = Convert.ToBoolean(dict.is_real);
+                var is_real = Convert.ToBoolean(dict["is_real"]);
                 var args = new UserRecordArgs
                 {
-                    login = Convert.ToInt32(dict.mt4UserID),
-                    password = dict.password,
-                    name = dict.name,
-                    email = dict.email,
+                    login = Convert.ToInt32(dict["mt4UserID"]),
+                    password = dict["password"],
+                    name = dict["name"],
+                    email = dict["email"],
                     group = Poll.MT4Group,
-                    leverage = Convert.ToInt32(dict.leverage)
+                    leverage = Convert.ToInt32(dict["leverage"])
                 };
                 if(!is_real)
                 {
@@ -39,7 +39,7 @@ namespace MT4Proxy.NET.Service
                     {
                         type = TradeTransInfoTypes.TT_BR_BALANCE,
                         cmd = 6,
-                        orderby = Convert.ToInt32(dict.mt4UserID),
+                        orderby = Convert.ToInt32(dict["mt4UserID"]),
                         price = 10000.0
                     };
                     result = api.TradeTransaction(money_args);

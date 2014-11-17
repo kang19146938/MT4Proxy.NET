@@ -7,6 +7,8 @@ using System.Timers;
 using NLog;
 using System.Collections.Concurrent;
 using MT4CliWrapper;
+using System.Text.RegularExpressions;
+using Castle.Zmq;
 
 namespace MT4Proxy.NET.Core
 {
@@ -121,16 +123,15 @@ namespace MT4Proxy.NET.Core
             if( _quoteTimer == null)
             {
                 _quoteTimer = new Timer(10000);
-                _quoteTimer.Elapsed += QuoteProc;
-                QuoteProc(_quoteTimer, null);
+                _quoteTimer.Elapsed += SaveQuoteProc;
+                SaveQuoteProc(_quoteTimer, null);
             }
         }
 
-        private static void QuoteProc(object sender , ElapsedEventArgs e)
+        private static void SaveQuoteProc(object sender , ElapsedEventArgs e)
         {
             var timer = sender as Timer;
             timer.Stop();
-            var count = _queQuote.Count;
             var dictBuffer = new Dictionary<Tuple<string, DateTime>, Tuple<double, double>>();
             while(!_queQuote.IsEmpty)
             {
@@ -143,7 +144,7 @@ namespace MT4Proxy.NET.Core
             }
             var items = dictBuffer.Select(i => new Tuple<string, double, double, DateTime>
                 (i.Key.Item1, i.Value.Item1, i.Value.Item2, i.Key.Item2));
-            QuoteSyncer.UpdateQuote(items);
+             QuoteSyncer.UpdateQuote(items);
             timer.Start();
         }
 

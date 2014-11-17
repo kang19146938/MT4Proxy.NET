@@ -14,9 +14,9 @@ namespace MT4Proxy.NET.Service
             var args = new TradeTransInfoArgs
             {
                 type = TradeTransInfoTypes.TT_BR_BALANCE,
-                cmd = Convert.ToInt16(dict.cmd),
-                orderby = Convert.ToInt32(dict.mt4UserID),
-                price = Convert.ToDouble(dict.price)
+                cmd = 6,
+                orderby = Convert.ToInt32(dict["mt4UserID"]),
+                price = Convert.ToDouble(dict["price"])
             };
             var result = aServer.MT4.TradeTransaction(args);
             dynamic resp = new ExpandoObject();

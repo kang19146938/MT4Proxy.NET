@@ -9,6 +9,7 @@ using CSRedis;
 using MT4CliWrapper;
 using NLog;
 using Newtonsoft.Json;
+using System.Web.Script.Serialization;
 
 namespace MT4Proxy.NET.Core
 {
@@ -65,6 +66,11 @@ namespace MT4Proxy.NET.Core
         public static void Init()
         {
             Logger initlogger = LogManager.GetLogger("common");
+            if(!bool.Parse(_config.AppSettings["enable_redis"]))
+            {
+                initlogger.Info("Redis服务被禁用，跳过初始化工作");
+                return;
+            }
             ConfigurationOptions redisconfig = new ConfigurationOptions
             {
                 EndPoints =
@@ -82,6 +88,7 @@ namespace MT4Proxy.NET.Core
                 if (!attr.EnableRedis)
                     continue;
                 initlogger.Info(string.Format("准备启动redis监听服务:{0}", i.Name));
+                var jss = new JavaScriptSerializer();
                 new Thread(() =>
                 {
                     try
@@ -104,9 +111,8 @@ namespace MT4Proxy.NET.Core
                                             server.Logger = LogManager.GetLogger("common");
                                             var serviceobj = Activator.CreateInstance(service) as IService;
                                             server.Logger.Info(string.Format("Redis,recv request:{0}", item));
-                                            //var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(item);
-                                            var json = JsonConvert.DeserializeObject<dynamic>(item);
-                                            serviceobj.OnRequest(server, json);
+                                            var dict = jss.Deserialize<dynamic>(item);
+                                            serviceobj.OnRequest(server, dict);
                                             if (!string.IsNullOrEmpty(server.Output) && !string.IsNullOrEmpty(server.RedisOutputList))
                                             {
                                                 server.Logger.Info(string.Format("Redis,response:{0}", server.Output));

@@ -15,7 +15,7 @@ namespace MT4Proxy.NET.Service
         {
             dynamic resp = new ExpandoObject();
             var dict = aJson;
-            if(!_leverageSet.Contains(dict.leverage))
+            if(!_leverageSet.Contains(dict["leverage"]))
             {
                 resp = Utils.MakeResponseObject(false, -1, "杠杆不正确");
                 aServer.Output = JsonConvert.SerializeObject(resp);
@@ -23,15 +23,15 @@ namespace MT4Proxy.NET.Service
             }
             var args = new TradeTransInfoArgs
             {
-                type = Convert.ToInt32(dict.type),
-                cmd = Convert.ToInt16(dict.cmd),
-                orderby = Convert.ToInt32(dict.mt4UserID),
-                price = Convert.ToDouble(dict.price),
-                order = Convert.ToInt32(dict.mt4OrderID),
-                symbol = string.Format("{0}{1}", dict.symbol, dict.leverage),
-                volume = Convert.ToInt32(dict.volume),
-                sl = Convert.ToDouble(dict.sl),
-                tp = Convert.ToDouble(dict.tp),
+                type = Convert.ToInt32(dict["type"]),
+                cmd = Convert.ToInt16(dict["cmd"]),
+                orderby = Convert.ToInt32(dict["mt4UserID"]),
+                price = Convert.ToDouble(dict["price"]),
+                order = Convert.ToInt32(dict["mt4OrderID"]),
+                symbol = string.Format("{0}{1}", dict["symbol"], dict["leverage"]),
+                volume = Convert.ToInt32(dict["volume"]),
+                sl = Convert.ToDouble(dict["sl"]),
+                tp = Convert.ToDouble(dict["tp"]),
             };
             //if(args.type == TradeTransInfoTypes.TT_BR_BALANCE)
             var result = aServer.MT4.TradeTransaction(args);

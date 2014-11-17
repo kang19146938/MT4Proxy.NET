@@ -35,7 +35,7 @@ namespace MT4CliWrapper {
 		bool ConnectPump();
 
 		bool IsPumpAlive();
-	public: //APIs
+	public: //Direct APIs
 		RET_CODE TradeTransaction(TradeTransInfoArgs);
 		RET_CODE MarginLevelRequest(const int login, MarginLevelArgs% level);
 		array<TradeRecordResult>^ UserRecordsRequest(const int logins, int from, int to);
@@ -43,6 +43,9 @@ namespace MT4CliWrapper {
 		TradeRecordResult AdmTradesRequest(int orderID, bool open_only);
 		RET_CODE ChangePassword(const int login, String^ password);
 		RET_CODE GetEquity(int login, Double%);
+		array<SymbolInfoResult>^ AllSymbols();
+	public: //Pumping APIs
+		int GetUpdatedSymbols(SymbolInfo*, int);
 	public: //Events & callbacks
 		static event LogResponse^ OnLog;
 	protected: //Pump callback

@@ -32,6 +32,10 @@ namespace MT4Proxy.NET.Core
             }
             return fetch;
         }
+        public static void PubMessage(string aTopic, string aMessage)
+        {
+            ZmqServer.PubMessage(aTopic, aMessage);
+        }
 
         public static MT4Wrapper New()
         {

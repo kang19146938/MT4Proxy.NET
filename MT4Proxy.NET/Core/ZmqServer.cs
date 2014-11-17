@@ -10,6 +10,8 @@ using Newtonsoft.Json;
 using Castle.Zmq;
 using System.Text;
 using Newtonsoft.Json.Linq;
+using System.Threading;
+using System.Web.Script.Serialization;
 
 namespace MT4Proxy.NET.Core
 {
@@ -17,16 +19,55 @@ namespace MT4Proxy.NET.Core
     {
         private static Context _zmqCtx = null;
         private static ConcurrentDictionary<string, Type> _apiDict = new ConcurrentDictionary<string, Type>();
+        private static IZmqSocket _publisher = null;
+        private static Semaphore _pubSignal = new Semaphore(0, 20000);
+        private static ConcurrentQueue<Tuple<string, string>>
+            _queMessages = new ConcurrentQueue<Tuple<string, string>>();
 
         public ZmqServer()
         {
             MT4 = Poll.New();
         }
+
+        internal static void PubMessage(string aTopic, string aMessage)
+        {
+            var socket = _publisher;
+            if(socket != null)
+            {
+                _queMessages.Enqueue(new Tuple<string, string>(aTopic, aMessage));
+                _pubSignal.Release();
+            }
+        }
+
+        private static void PubProc(object aArg)
+        {
+            while(MT4Pump.EnableRestart)
+            {
+                _pubSignal.WaitOne();
+                Tuple<string, string> item = null;
+                _queMessages.TryDequeue(out item);
+                if (item == null) continue;
+                var topic = item.Item1;
+                var message = item.Item2;
+                var socket = _publisher;
+                if (socket != null)
+                {
+                    socket.Send(topic, null, hasMoreToSend: true);
+                    socket.Send(message);
+                }
+            }
+        }
+
         public static void Init()
         {
             Logger initlogger = LogManager.GetLogger("common");
-            _zmqCtx = new Context();
             var config = new ConfigurationManager();
+            if(!bool.Parse(config.AppSettings["enable_zmq"]))
+            {
+                initlogger.Info("ZMQ服务被禁用，跳过ZMQ初始化");
+                return;
+            }
+            _zmqCtx = new Context();
             var zmqBind = config.AppSettings["zmq_bind"];
             foreach (var i in Utils.GetTypesWithServiceAttribute())
             {
@@ -47,15 +88,22 @@ namespace MT4Proxy.NET.Core
                 }
             }
             var repSocket = _zmqCtx.CreateSocket(SocketType.Rep);
+            var pubSocket = _zmqCtx.CreateSocket(SocketType.Pub);
             repSocket.Bind(zmqBind);
+            pubSocket.Bind(config.AppSettings["zmq_pub_bind"]);
+            _publisher = pubSocket;
+            var th_pub = new Thread(PubProc);
+            th_pub.IsBackground = true;
+            th_pub.Start();
+            var jss = new JavaScriptSerializer();
             var polling = new Polling(PollingEvents.RecvReady, repSocket);
             polling.RecvReady += (socket) =>
             {
                 try
                 {
                     var item = socket.RecvString(Encoding.UTF8);
-                    dynamic json = JObject.Parse(item);
-                    string api_name = json.__api;
+                    var dict = jss.Deserialize<dynamic>(item);
+                    string api_name = dict["__api"];
                     if(_apiDict.ContainsKey(api_name))
                     {
                         var service = _apiDict[api_name];
@@ -64,7 +112,7 @@ namespace MT4Proxy.NET.Core
                         {
                             server.Logger = LogManager.GetLogger("common");
                             server.Logger.Info(string.Format("ZMQ,recv request:{0}", item));
-                            serviceobj.OnRequest(server, json);
+                            serviceobj.OnRequest(server, dict);
                             if (server.Output != null)
                             {
                                 server.Logger.Info(string.Format("ZMQ,response:{0}", server.Output));

@@ -19,7 +19,7 @@ namespace MT4Proxy.NET.Service
             try
             {
                 var dict = aJson;
-                var result = aServer.MT4.ChangePassword(Convert.ToInt32(dict.mt4UserID), dict.password.ToString());
+                var result = aServer.MT4.ChangePassword(Convert.ToInt32(dict["mt4UserID"]), dict["password"].ToString());
                 dynamic resp = new ExpandoObject();
                 resp.is_succ = result == RET_CODE.RET_OK;
                 resp.err_msg = Utils.GetErrorMessage(result);
