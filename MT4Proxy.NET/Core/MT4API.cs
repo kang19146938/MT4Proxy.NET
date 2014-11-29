@@ -77,6 +77,8 @@ namespace MT4Proxy.NET.Core
 
         protected override void OnPumpTrade(TRANS_TYPE aType, TradeRecordResult aRecord)
         {
+            Logger logger = LogManager.GetLogger("common");
+            logger.Info(string.Format("這個單子的時間戳:{0}", aRecord.timestamp));
             MT4Pump.PushTrade(aType, aRecord);
         }
 

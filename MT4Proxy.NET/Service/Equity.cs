@@ -14,6 +14,7 @@ namespace MT4Proxy.NET.Service
             var login = Convert.ToInt32(aJson["mt4UserID"]);
             double equity = 0;
             var result = aServer.MT4.GetEquity(login, ref equity);
+            equity = Math.Round(equity, 2);
             dynamic resp = new ExpandoObject();
             resp.is_succ = result == RET_CODE.RET_OK;
             resp.err_msg = Utils.GetErrorMessage(result);

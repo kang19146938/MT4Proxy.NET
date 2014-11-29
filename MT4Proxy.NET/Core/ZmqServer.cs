@@ -24,9 +24,15 @@ namespace MT4Proxy.NET.Core
         private static ConcurrentQueue<Tuple<string, string>>
             _queMessages = new ConcurrentQueue<Tuple<string, string>>();
 
-        public ZmqServer()
+        private int _mt4ID = 0;
+
+        public ZmqServer(int aMT4ID)
         {
-            MT4 = Poll.New();
+            if (aMT4ID > 0)
+                MT4 = Poll.Fetch(aMT4ID);
+            else
+                MT4 = Poll.New();
+            _mt4ID = aMT4ID;
         }
 
         internal static void PubMessage(string aTopic, string aMessage)
@@ -104,11 +110,14 @@ namespace MT4Proxy.NET.Core
                     var item = socket.RecvString(Encoding.UTF8);
                     var dict = jss.Deserialize<dynamic>(item);
                     string api_name = dict["__api"];
+                    var mt4_id = 0;
+                    if (dict.ContainsKey("mt4UserID"))
+                        mt4_id = (int)dict["mt4UserID"];
                     if(_apiDict.ContainsKey(api_name))
                     {
                         var service = _apiDict[api_name];
                         var serviceobj = Activator.CreateInstance(service) as IService;
-                        using (var server = new ZmqServer())
+                        using (var server = new ZmqServer(mt4_id))
                         {
                             server.Logger = LogManager.GetLogger("common");
                             server.Logger.Info(string.Format("ZMQ,recv request:{0}", item));
@@ -180,7 +189,10 @@ namespace MT4Proxy.NET.Core
 
             if (disposing)
             {
-                Poll.Release(MT4);
+                if (_mt4ID > 0)
+                    Poll.Bringback(MT4);
+                else
+                    Poll.Release(MT4);
                 MT4 = null;
                 Logger = null;
             }

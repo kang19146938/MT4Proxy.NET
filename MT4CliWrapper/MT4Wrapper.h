@@ -43,6 +43,7 @@ namespace MT4CliWrapper {
 		TradeRecordResult AdmTradesRequest(int orderID, bool open_only);
 		RET_CODE ChangePassword(const int login, String^ password);
 		RET_CODE GetEquity(int login, Double%);
+		__time32_t ServerTime();
 		array<SymbolInfoResult>^ AllSymbols();
 	public: //Pumping APIs
 		int GetUpdatedSymbols(SymbolInfo*, int);

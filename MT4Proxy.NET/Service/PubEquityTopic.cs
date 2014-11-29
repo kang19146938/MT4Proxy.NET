@@ -74,6 +74,7 @@ namespace MT4Proxy.NET.Service
                 double equity = 0;
                 var result = api.GetEquity(MT4ID, ref equity);
                 Poll.Bringback(api);
+                equity = Math.Round(equity, 2);
                 dynamic resp = new ExpandoObject();
                 resp.is_succ = result == 0;
                 resp.errMsg = Utils.GetErrorMessage(result);

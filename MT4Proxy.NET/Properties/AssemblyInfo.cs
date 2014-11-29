@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // 有关程序集的常规信息通过以下
 // 特性集控制。更改这些特性值可修改
 // 与程序集关联的信息。
-[assembly: AssemblyTitle("FTS.NET")]
+[assembly: AssemblyTitle("MT4Proxy.NET")]
 [assembly: AssemblyDescription("Tigerwit MT4 .NET代理程序")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Tigerwit")]
-[assembly: AssemblyProduct("FTS.NET")]
+[assembly: AssemblyProduct("MT4Proxy.NET")]
 [assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("Tigerwit")]
 [assembly: AssemblyCulture("")]
@@ -33,4 +33,4 @@ using System.Runtime.InteropServices;
 // 方法是按如下所示使用“*”: 
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.1.*")]
-[assembly: AssemblyFileVersion("1.1.*")]
+//[assembly: AssemblyFileVersion("1.1.*")]

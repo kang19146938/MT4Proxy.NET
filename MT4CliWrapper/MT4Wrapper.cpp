@@ -304,7 +304,7 @@ TradeRecordResult MT4Wrapper::AdmTradesRequest(int orderID, bool open_only)
 RET_CODE MT4Wrapper::ChangePassword(const int login, String^ password)
 {
 	std::string passwd = marshal_as<std::string, System::String^>(password);
-	int nRet = m_pManagerDirect->UserPasswordSet(login, passwd.c_str(), TRUE, FALSE);
+	int nRet = m_pManagerDirect->UserPasswordSet(login, passwd.c_str(), FALSE, FALSE);
 	return (RET_CODE)nRet;
 }
 
@@ -316,6 +316,11 @@ RET_CODE MT4Wrapper::GetEquity(int login, Double% equity)
 	if (nRet == RET_OK)
 		equity = marginLevel.equity;
 	return (RET_CODE)nRet;
+}
+
+__time32_t MT4Wrapper::ServerTime()
+{
+	return m_pManagerDirect->ServerTime();
 }
 
 array<SymbolInfoResult>^ MT4Wrapper::AllSymbols()

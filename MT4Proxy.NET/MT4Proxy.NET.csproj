@@ -105,6 +105,7 @@
     <Compile Include="Service\OpenAccount.cs" />
     <Compile Include="Service\Pay.cs" />
     <Compile Include="Service\PubEquityTopic.cs" />
+    <Compile Include="Service\ServerTime.cs" />
     <Compile Include="Service\Trade.cs" />
     <Compile Include="Tasks\Equity.cs" />
   </ItemGroup>
@@ -155,9 +156,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Test\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>
