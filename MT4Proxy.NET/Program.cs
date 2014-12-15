@@ -60,6 +60,7 @@ namespace MT4Proxy.NET
                 {
                     var syncer = new MysqlSyncer();
                     syncer.SyncEquity();
+                    syncer.SyncMaster();
                     MT4Pump.EnableRestart = false;
                     System.Threading.Thread.Sleep(10000);
                     return false;
@@ -69,6 +70,7 @@ namespace MT4Proxy.NET
                 logger.Info("准备启动Zmq监听服务");
                 ZmqServer.Init();
                 logger.Info("初始工作已完成");
+                return true;
             }
             catch (OptionException e)
             {
@@ -82,7 +84,7 @@ namespace MT4Proxy.NET
                 var logger = LogManager.GetLogger("common");
                 logger.Error(e.StackTrace);
             }
-            return true;
+            return false;
         }
 
         public static void Stop()

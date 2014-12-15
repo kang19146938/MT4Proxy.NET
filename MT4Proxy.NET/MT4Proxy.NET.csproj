@@ -104,7 +104,7 @@
     <Compile Include="Service\Equity.cs" />
     <Compile Include="Service\OpenAccount.cs" />
     <Compile Include="Service\Pay.cs" />
-    <Compile Include="Service\PubEquityTopic.cs" />
+    <Compile Include="Tasks\PubEquityTopic.cs" />
     <Compile Include="Service\ServerTime.cs" />
     <Compile Include="Service\Trade.cs" />
     <Compile Include="Tasks\Equity.cs" />

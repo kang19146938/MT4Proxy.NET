@@ -143,7 +143,8 @@ namespace MT4Proxy.NET.Core
                 }
                 finally
                 {
-                    Task.Factory.StartNew(() => { polling.PollForever(); });
+                    if (MT4Pump.EnableRestart)
+                        Task.Factory.StartNew(() => { polling.PollForever(); });
                 }
             };
             Task.Factory.StartNew(() => { polling.PollForever(); });

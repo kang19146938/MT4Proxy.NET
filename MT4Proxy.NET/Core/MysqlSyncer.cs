@@ -17,6 +17,17 @@ namespace MT4Proxy.NET.Core
         public MysqlSyncer()
         {
             CreateTime = DateTime.MinValue;
+            CFD_List = new Dictionary<string, double>();
+            CFD_List["WTOil"] = 4500;
+            CFD_List["USDX"] = 4500;
+            CFD_List["DAX"] = 1500;
+            CFD_List["FFI"] = 1500;
+            CFD_List["NK"] = 200;
+            CFD_List["HSI"] = 300;
+            CFD_List["SFC"] = 1000;
+            CFD_List["mDJ"] = 2000;
+            CFD_List["mND"] = 4000;
+            CFD_List["mSP"] = 2000;
         }
 
         private MySqlConnection _connection = null;
@@ -85,6 +96,12 @@ namespace MT4Proxy.NET.Core
             set;
         }
 
+        private Dictionary<string, double> CFD_List
+        {
+            get;
+            set;
+        }
+
         public void UpdateQuote(IEnumerable<Tuple<string, double, double, DateTime>> aItems)
         {
                 var sql = string.Empty;
@@ -119,135 +136,28 @@ namespace MT4Proxy.NET.Core
 
         public void PushTrade(TRANS_TYPE aType, TradeRecordResult aRecord)
         {
-            var recordString = string.Empty;
-            var sql = string.Empty;
             string symbolPattern = @"^(?<symbol>[A-Za-z]+)(?<leverage>\d*)$";
+            string symbolPattern_CFD = @"^(?<symbol>[A-Za-z]+)_(?<number>\d*)$";
+            var recordString = string.Empty;
+            recordString = JsonConvert.SerializeObject(aRecord);
             try
             {
                 foreach (Match j in Regex.Matches(aRecord.symbol, symbolPattern))
                 {
+                    var leverage = 100;
                     var match = j.Groups;
-                    var symbol_origin = match["symbol"].ToString().ToUpper();
-                    var leverage= 100;
-                    if(!string.IsNullOrWhiteSpace(match["leverage"].ToString()))
+                    if (!string.IsNullOrWhiteSpace(match["leverage"].ToString()))
                         leverage = int.Parse(match["leverage"].ToString());
-                    aRecord.symbol = match["symbol"].ToString();
-                    using (var cmd = new MySqlCommand())
-                    {
-                        cmd.Connection = Connection;
-                        recordString = JsonConvert.SerializeObject(aRecord);
-                        if (aType == TRANS_TYPE.TRANS_ADD)
-                        {
-                            sql = "INSERT INTO `order`(mt4_id, order_id, " +
-                                "login, symbol, digits, cmd, volume, open_time, " +
-                                "state, open_price, sl, tp, close_time, value_date, " +
-                                "expiration, reason, commission, commission_agent, storage, " +
-                                "close_price, profit, taxes, magic, comment, internal_id, " +
-                                "activation, spread, margin_rate, leverage) " +
-                                " VALUES(@mt4id, @orderid, " +
-                                "@login, @symbol, @digits, @cmd, @volume, @open_time, " +
-                                "@state, @open_price, @sl, @tp, @close_time, @value_date, " +
-                                "@expiration, @reason, @commission, @commission_agent, @storage, " +
-                                "@close_price, @profit, @taxes, @magic, @comment, @internal_id, " +
-                                "@activation, @spread, @margin_rate, @leverage)" +
-                                "ON DUPLICATE KEY UPDATE " +
-                                "login=@login, symbol=@symbol, digits=@digits, cmd=@cmd, volume=@volume, open_time=@open_time, " +
-                                "state=@state, open_price=@open_price, sl=@sl, tp=@tp, close_time=@close_time, value_date=@value_date, " +
-                                "expiration=@expiration, reason=@reason, commission=@commission, commission_agent=@commission_agent, storage=@storage, " +
-                                "close_price=@close_price, profit=@profit, taxes=@taxes, magic=@magic, comment=@comment, internal_id=@internal_id, " +
-                                "activation=@activation, spread=@spread, margin_rate=@margin_rate, " +
-                                "leverage=@leverage";
-                            cmd.CommandText = sql;
-                            cmd.Parameters.AddWithValue("@mt4id", aRecord.login);
-                            cmd.Parameters.AddWithValue("@orderid", aRecord.order);
-                            cmd.Parameters.AddWithValue("@login", aRecord.login);
-                            cmd.Parameters.AddWithValue("@symbol", aRecord.symbol);
-                            cmd.Parameters.AddWithValue("@digits", aRecord.digits);
-                            cmd.Parameters.AddWithValue("@cmd", aRecord.cmd);
-                            cmd.Parameters.AddWithValue("@volume", aRecord.volume);
-                            cmd.Parameters.AddWithValue("@open_time", aRecord.open_time.FromTime32());
-                            cmd.Parameters.AddWithValue("@state", aRecord.state);
-                            cmd.Parameters.AddWithValue("@open_price", aRecord.open_price);
-                            cmd.Parameters.AddWithValue("@sl", aRecord.sl);
-                            cmd.Parameters.AddWithValue("@tp", aRecord.tp);
-                            cmd.Parameters.AddWithValue("@close_time", aRecord.close_time.FromTime32());
-                            cmd.Parameters.AddWithValue("@value_date", aRecord.value_date);
-                            cmd.Parameters.AddWithValue("@expiration", aRecord.expiration);
-                            cmd.Parameters.AddWithValue("@reason", aRecord.reason);
-                            cmd.Parameters.AddWithValue("@commission", aRecord.commission);
-                            cmd.Parameters.AddWithValue("@commission_agent", aRecord.commission_agent);
-                            cmd.Parameters.AddWithValue("@storage", aRecord.storage);
-                            cmd.Parameters.AddWithValue("@close_price", aRecord.close_price);
-                            cmd.Parameters.AddWithValue("@profit", aRecord.profit);
-                            cmd.Parameters.AddWithValue("@taxes", aRecord.taxes);
-                            cmd.Parameters.AddWithValue("@magic", aRecord.magic);
-                            cmd.Parameters.AddWithValue("@comment", aRecord.comment);
-                            cmd.Parameters.AddWithValue("@internal_id", aRecord.internal_id);
-                            cmd.Parameters.AddWithValue("@activation", aRecord.activation);
-                            cmd.Parameters.AddWithValue("@spread", aRecord.spread);
-                            cmd.Parameters.AddWithValue("@margin_rate", aRecord.margin_rate);
-                            cmd.Parameters.AddWithValue("@leverage", leverage);
-                            cmd.ExecuteNonQuery();
-                        }
-                        else if (aType == TRANS_TYPE.TRANS_DELETE)
-                        {
-                            sql = "INSERT INTO history(mt4_id, timestamp, order_id, " +
-                                "login, symbol, digits, cmd, volume, open_time, " +
-                                "state, open_price, sl, tp, close_time, value_date, " +
-                                "expiration, reason, commission, commission_agent, storage, " +
-                                "close_price, profit, taxes, magic, comment, internal_id, " +
-                                "activation, spread, margin_rate, leverage) " +
-                                "VALUES(@mt4id, @timestamp, @orderid, " +
-                                "@login, @symbol, @digits, @cmd, @volume, @open_time, " +
-                                "@state, @open_price, @sl, @tp, @close_time, @value_date, " +
-                                "@expiration, @reason, @commission, @commission_agent, @storage, " +
-                                "@close_price, @profit, @taxes, @magic, @comment, @internal_id, " +
-                                "@activation, @spread, @margin_rate, @leverage)" +
-                                "ON DUPLICATE KEY UPDATE " +
-                                "login=@login, symbol=@symbol, digits=@digits, cmd=@cmd, volume=@volume, open_time=@open_time, " +
-                                "state=@state, open_price=@open_price, sl=@sl, tp=@tp, close_time=@close_time, value_date=@value_date, " +
-                                "expiration=@expiration, reason=@reason, commission=@commission, commission_agent=@commission_agent, storage=@storage, " +
-                                "close_price=@close_price, profit=@profit, taxes=@taxes, magic=@magic, comment=@comment, internal_id=@internal_id, " +
-                                "activation=@activation, spread=@spread, margin_rate=@margin_rate, " +
-                                "leverage=@leverage";
-                            cmd.CommandText = sql;
-                            cmd.Parameters.AddWithValue("@mt4id", aRecord.login);
-                            cmd.Parameters.AddWithValue("@timestamp", aRecord.timestamp.FromTime32());
-                            cmd.Parameters.AddWithValue("@orderid", aRecord.order);
-                            cmd.Parameters.AddWithValue("@login", aRecord.login);
-                            cmd.Parameters.AddWithValue("@symbol", aRecord.symbol);
-                            cmd.Parameters.AddWithValue("@digits", aRecord.digits);
-                            cmd.Parameters.AddWithValue("@cmd", aRecord.cmd);
-                            cmd.Parameters.AddWithValue("@volume", aRecord.volume);
-                            cmd.Parameters.AddWithValue("@open_time", aRecord.open_time.FromTime32());
-                            cmd.Parameters.AddWithValue("@state", aRecord.state);
-                            cmd.Parameters.AddWithValue("@open_price", aRecord.open_price);
-                            cmd.Parameters.AddWithValue("@sl", aRecord.sl);
-                            cmd.Parameters.AddWithValue("@tp", aRecord.tp);
-                            cmd.Parameters.AddWithValue("@close_time", aRecord.close_time.FromTime32());
-                            cmd.Parameters.AddWithValue("@value_date", aRecord.value_date);
-                            cmd.Parameters.AddWithValue("@expiration", aRecord.expiration);
-                            cmd.Parameters.AddWithValue("@reason", aRecord.reason);
-                            cmd.Parameters.AddWithValue("@commission", aRecord.commission);
-                            cmd.Parameters.AddWithValue("@commission_agent", aRecord.commission_agent);
-                            cmd.Parameters.AddWithValue("@storage", aRecord.storage);
-                            cmd.Parameters.AddWithValue("@close_price", aRecord.close_price);
-                            cmd.Parameters.AddWithValue("@profit", aRecord.profit);
-                            cmd.Parameters.AddWithValue("@taxes", aRecord.taxes);
-                            cmd.Parameters.AddWithValue("@magic", aRecord.magic);
-                            cmd.Parameters.AddWithValue("@comment", aRecord.comment);
-                            cmd.Parameters.AddWithValue("@internal_id", aRecord.internal_id);
-                            cmd.Parameters.AddWithValue("@activation", aRecord.activation);
-                            cmd.Parameters.AddWithValue("@spread", aRecord.spread);
-                            cmd.Parameters.AddWithValue("@margin_rate", aRecord.margin_rate);
-                            cmd.Parameters.AddWithValue("@leverage", leverage);
-                            cmd.ExecuteNonQuery();
-                            cmd.Parameters.Clear();
-                            cmd.CommandText = "DELETE FROM `order` WHERE order_id = @orderid";
-                            cmd.Parameters.AddWithValue("@orderid", aRecord.order);
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                    Trade2Mysql(aType, aRecord, j, leverage, 100000);
+                }
+                foreach (Match j in Regex.Matches(aRecord.symbol, symbolPattern_CFD))
+                {
+                    var match = j.Groups;
+                    var symbol = match["symbol"].ToString();
+                    var pov = 100000.0;
+                    if (CFD_List.ContainsKey(symbol))
+                        pov = CFD_List[symbol];
+                    Trade2Mysql(aType, aRecord, j, 1, pov, 10.0f);
                 }
             }
             catch(Exception e)
@@ -264,6 +174,229 @@ namespace MT4Proxy.NET.Core
                 }
                 logger.Error(string.Format("交易MySQL操作失败,错误信息{0}\n原始数据:{1}", e.Message, recordString));
                 Connection = null;
+            }
+        }
+
+        private void Trade2Mysql(TRANS_TYPE aType, TradeRecordResult aRecord, Match j, int leverage, double pov, float pip_coefficient=1.0f)
+        {
+            var sql = string.Empty;
+            var match = j.Groups;
+            aRecord.symbol = match["symbol"].ToString();
+            using (var cmd = new MySqlCommand())
+            {
+                cmd.Connection = Connection;
+                if (aType == TRANS_TYPE.TRANS_ADD)
+                {
+                    sql = "INSERT INTO `order`(mt4_id, order_id, " +
+                        "login, symbol, digits, cmd, volume, open_time, " +
+                        "state, open_price, sl, tp, close_time, value_date, " +
+                        "expiration, reason, commission, commission_agent, storage, " +
+                        "close_price, profit, taxes, magic, comment, internal_id, " +
+                        "activation, spread, margin_rate, leverage, pov, pip_coefficient) " +
+                        " VALUES(@mt4id, @orderid, " +
+                        "@login, @symbol, @digits, @cmd, @volume, @open_time, " +
+                        "@state, @open_price, @sl, @tp, @close_time, @value_date, " +
+                        "@expiration, @reason, @commission, @commission_agent, @storage, " +
+                        "@close_price, @profit, @taxes, @magic, @comment, @internal_id, " +
+                        "@activation, @spread, @margin_rate, @leverage, @pov, @pip_coefficient)" +
+                        "ON DUPLICATE KEY UPDATE " +
+                        "login=@login, symbol=@symbol, digits=@digits, cmd=@cmd, volume=@volume, open_time=@open_time, " +
+                        "state=@state, open_price=@open_price, sl=@sl, tp=@tp, close_time=@close_time, value_date=@value_date, " +
+                        "expiration=@expiration, reason=@reason, commission=@commission, commission_agent=@commission_agent, storage=@storage, " +
+                        "close_price=@close_price, profit=@profit, taxes=@taxes, magic=@magic, comment=@comment, internal_id=@internal_id, " +
+                        "activation=@activation, spread=@spread, margin_rate=@margin_rate, " +
+                        "leverage=@leverage, pov=@pov, pip_coefficient=@pip_coefficient";
+                    cmd.CommandText = sql;
+                    cmd.Parameters.AddWithValue("@mt4id", aRecord.login);
+                    cmd.Parameters.AddWithValue("@orderid", aRecord.order);
+                    cmd.Parameters.AddWithValue("@login", aRecord.login);
+                    cmd.Parameters.AddWithValue("@symbol", aRecord.symbol);
+                    cmd.Parameters.AddWithValue("@digits", aRecord.digits);
+                    cmd.Parameters.AddWithValue("@cmd", aRecord.cmd);
+                    cmd.Parameters.AddWithValue("@volume", aRecord.volume);
+                    cmd.Parameters.AddWithValue("@open_time", aRecord.open_time.FromTime32());
+                    cmd.Parameters.AddWithValue("@state", aRecord.state);
+                    cmd.Parameters.AddWithValue("@open_price", aRecord.open_price);
+                    cmd.Parameters.AddWithValue("@sl", aRecord.sl);
+                    cmd.Parameters.AddWithValue("@tp", aRecord.tp);
+                    cmd.Parameters.AddWithValue("@close_time", aRecord.close_time.FromTime32());
+                    cmd.Parameters.AddWithValue("@value_date", aRecord.value_date);
+                    cmd.Parameters.AddWithValue("@expiration", aRecord.expiration);
+                    cmd.Parameters.AddWithValue("@reason", aRecord.reason);
+                    cmd.Parameters.AddWithValue("@commission", aRecord.commission);
+                    cmd.Parameters.AddWithValue("@commission_agent", aRecord.commission_agent);
+                    cmd.Parameters.AddWithValue("@storage", aRecord.storage);
+                    cmd.Parameters.AddWithValue("@close_price", aRecord.close_price);
+                    cmd.Parameters.AddWithValue("@profit", aRecord.profit);
+                    cmd.Parameters.AddWithValue("@taxes", aRecord.taxes);
+                    cmd.Parameters.AddWithValue("@magic", aRecord.magic);
+                    cmd.Parameters.AddWithValue("@comment", aRecord.comment);
+                    cmd.Parameters.AddWithValue("@internal_id", aRecord.internal_id);
+                    cmd.Parameters.AddWithValue("@activation", aRecord.activation);
+                    cmd.Parameters.AddWithValue("@spread", aRecord.spread);
+                    cmd.Parameters.AddWithValue("@margin_rate", aRecord.margin_rate);
+                    cmd.Parameters.AddWithValue("@leverage", leverage);
+                    cmd.Parameters.AddWithValue("@pov", pov);
+                    cmd.Parameters.AddWithValue("@pip_coefficient", pip_coefficient);
+                    cmd.ExecuteNonQuery();
+                }
+                else if (aType == TRANS_TYPE.TRANS_DELETE)
+                {
+                    sql = "INSERT INTO history(mt4_id, timestamp, order_id, " +
+                        "login, symbol, digits, cmd, volume, open_time, " +
+                        "state, open_price, sl, tp, close_time, value_date, " +
+                        "expiration, reason, commission, commission_agent, storage, " +
+                        "close_price, profit, taxes, magic, comment, internal_id, " +
+                        "activation, spread, margin_rate, leverage, pov, pip_coefficient) " +
+                        "VALUES(@mt4id, @timestamp, @orderid, " +
+                        "@login, @symbol, @digits, @cmd, @volume, @open_time, " +
+                        "@state, @open_price, @sl, @tp, @close_time, @value_date, " +
+                        "@expiration, @reason, @commission, @commission_agent, @storage, " +
+                        "@close_price, @profit, @taxes, @magic, @comment, @internal_id, " +
+                        "@activation, @spread, @margin_rate, @leverage, @pov, @pip_coefficient)" +
+                        "ON DUPLICATE KEY UPDATE " +
+                        "login=@login, symbol=@symbol, digits=@digits, cmd=@cmd, volume=@volume, open_time=@open_time, " +
+                        "state=@state, open_price=@open_price, sl=@sl, tp=@tp, close_time=@close_time, value_date=@value_date, " +
+                        "expiration=@expiration, reason=@reason, commission=@commission, commission_agent=@commission_agent, storage=@storage, " +
+                        "close_price=@close_price, profit=@profit, taxes=@taxes, magic=@magic, comment=@comment, internal_id=@internal_id, " +
+                        "activation=@activation, spread=@spread, margin_rate=@margin_rate, " +
+                        "leverage=@leverage, pov=@pov, pip_coefficient=@pip_coefficient";
+                    cmd.CommandText = sql;
+                    cmd.Parameters.AddWithValue("@mt4id", aRecord.login);
+                    cmd.Parameters.AddWithValue("@timestamp", aRecord.timestamp.FromTime32());
+                    cmd.Parameters.AddWithValue("@orderid", aRecord.order);
+                    cmd.Parameters.AddWithValue("@login", aRecord.login);
+                    cmd.Parameters.AddWithValue("@symbol", aRecord.symbol);
+                    cmd.Parameters.AddWithValue("@digits", aRecord.digits);
+                    cmd.Parameters.AddWithValue("@cmd", aRecord.cmd);
+                    cmd.Parameters.AddWithValue("@volume", aRecord.volume);
+                    cmd.Parameters.AddWithValue("@open_time", aRecord.open_time.FromTime32());
+                    cmd.Parameters.AddWithValue("@state", aRecord.state);
+                    cmd.Parameters.AddWithValue("@open_price", aRecord.open_price);
+                    cmd.Parameters.AddWithValue("@sl", aRecord.sl);
+                    cmd.Parameters.AddWithValue("@tp", aRecord.tp);
+                    cmd.Parameters.AddWithValue("@close_time", aRecord.close_time.FromTime32());
+                    cmd.Parameters.AddWithValue("@value_date", aRecord.value_date);
+                    cmd.Parameters.AddWithValue("@expiration", aRecord.expiration);
+                    cmd.Parameters.AddWithValue("@reason", aRecord.reason);
+                    cmd.Parameters.AddWithValue("@commission", aRecord.commission);
+                    cmd.Parameters.AddWithValue("@commission_agent", aRecord.commission_agent);
+                    cmd.Parameters.AddWithValue("@storage", aRecord.storage);
+                    cmd.Parameters.AddWithValue("@close_price", aRecord.close_price);
+                    cmd.Parameters.AddWithValue("@profit", aRecord.profit);
+                    cmd.Parameters.AddWithValue("@taxes", aRecord.taxes);
+                    cmd.Parameters.AddWithValue("@magic", aRecord.magic);
+                    cmd.Parameters.AddWithValue("@comment", aRecord.comment);
+                    cmd.Parameters.AddWithValue("@internal_id", aRecord.internal_id);
+                    cmd.Parameters.AddWithValue("@activation", aRecord.activation);
+                    cmd.Parameters.AddWithValue("@spread", aRecord.spread);
+                    cmd.Parameters.AddWithValue("@margin_rate", aRecord.margin_rate);
+                    cmd.Parameters.AddWithValue("@leverage", leverage);
+                    cmd.Parameters.AddWithValue("@pov", pov);
+                    cmd.Parameters.AddWithValue("@pip_coefficient", pip_coefficient);
+                    cmd.ExecuteNonQuery();
+                    cmd.Parameters.Clear();
+                    cmd.CommandText = "DELETE FROM `order` WHERE order_id = @orderid";
+                    cmd.Parameters.AddWithValue("@orderid", aRecord.order);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+
+        public void SyncMaster()
+        {
+            Logger logger = LogManager.GetLogger("common");
+            logger.Info("准备开始同步高手榜到MySQL");
+            var now = DateTime.UtcNow.Date;
+            var start_date = DateTime.UtcNow.AddDays(-30).Date;
+            var sql_cmd = "SELECT mt4_id, SUM(`profit`+`storage`) / SUM(1000 * volume / leverage) AS profit_rate, " + 
+                "COUNT(*) AS total_orders, " +
+                "SUM((close_price - open_price) * pow(10, digits -3) * (cmd * -2 + 1) * volume) AS total_pip " +
+                "FROM tiger.history WHERE `timestamp` > @start_date " + 
+                "GROUP BY `mt4_id` ORDER BY profit_rate DESC limit 10;";
+            var lstRate = new List<Tuple<int, double, int, double>>();
+            using (var cmd = new MySqlCommand(sql_cmd, Connection))
+            {
+                cmd.Parameters.AddWithValue("@start_date", start_date);
+                using (var master_reader = cmd.ExecuteReader())
+                {
+                    while (master_reader.Read())
+                    {
+                        var id = int.Parse(master_reader["mt4_id"].ToString());
+                        var rate = double.Parse(master_reader["profit_rate"].ToString());
+                        var pips = double.Parse(master_reader["total_pip"].ToString());
+                        var orders = int.Parse(master_reader["total_orders"].ToString());
+                        logger.Info(string.Format("MasterList|MT4ID:{0}, Rate:{1}", id, rate));
+                        lstRate.Add(new Tuple<int, double, int, double>(id, rate, orders, pips));
+                    }
+                }
+            }
+
+            var dictProfitableCount = new Dictionary<int, double>();
+            var dictProfile = new Dictionary<int, Tuple<string, string, string>>();
+            foreach(var item in lstRate)
+            {
+                sql_cmd = "SELECT COUNT(*) AS profitable_count FROM history WHERE mt4_id = @mt4id AND `timestamp` > @start_date AND `profit` + `storage` > 0";
+                using (var cmd = new MySqlCommand(sql_cmd, Connection))
+                {
+                    cmd.Parameters.AddWithValue("@mt4id", item.Item1);
+                    cmd.Parameters.AddWithValue("@start_date", start_date);
+                    using (var master_reader = cmd.ExecuteReader())
+                    {
+                        while (master_reader.Read())
+                        {
+                            var count = int.Parse(master_reader["profitable_count"].ToString());
+                            logger.Info(string.Format("MasterList|MT4ID:{0}, ProfitableCount:{1}", item.Item1, count));
+                            dictProfitableCount[item.Item1] = count;
+                            break;
+                        }
+                    }
+                }
+
+                sql_cmd = "SELECT * FROM user WHERE mt4_real = @mt4id;";
+                using (var cmd = new MySqlCommand(sql_cmd, Connection))
+                {
+                    cmd.Parameters.AddWithValue("@mt4id", item.Item1);
+                    using (var master_reader = cmd.ExecuteReader())
+                    {
+                        while (master_reader.Read())
+                        {
+                            var username = master_reader["username"].ToString();
+                            var sex = master_reader["sex"].ToString();
+                            var avatar = string.Empty;
+                            dictProfile[item.Item1] = new Tuple<string, string, string>(username, sex, avatar);
+                            logger.Info(string.Format("MasterList|MT4ID:{0}, username:{1}, sex:{2}, avatar:{3}", 
+                                item.Item1, username, sex, avatar));
+                            break;
+                        }
+                    }
+                }
+                if(dictProfile.ContainsKey(item.Item1) && dictProfitableCount.ContainsKey(item.Item1))
+                {
+                    sql_cmd = "INSERT INTO `master`(`date`,`username`,`sex`,`orders`,`profit_rate`,`pips`, `percent_profitable`) " +
+                    "VALUES(@date, @username, @sex, @orders, @profit_rate, @pips, @percent_profitable);";
+                    var percent_profitable = 0.0;
+                    if(item.Item3!=0)
+                    {
+                        percent_profitable = dictProfitableCount[item.Item1] / item.Item3;
+                    }
+                    using (var cmd = new MySqlCommand(sql_cmd, Connection))
+                    {
+                        cmd.Parameters.AddWithValue("@date", now);
+                        cmd.Parameters.AddWithValue("@username", dictProfile[item.Item1].Item1);
+                        cmd.Parameters.AddWithValue("@sex", dictProfile[item.Item1].Item2);
+                        cmd.Parameters.AddWithValue("@orders", item.Item3);
+                        cmd.Parameters.AddWithValue("@profit_rate", item.Item2);
+                        cmd.Parameters.AddWithValue("@pips", item.Item4);
+                        cmd.Parameters.AddWithValue("@percent_profitable", percent_profitable);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                else
+                {
+                    logger.Info(string.Format("MasterList|MT4ID:{0} 数据残缺不能保存该记录", item.Item1));
+                }
             }
         }
 

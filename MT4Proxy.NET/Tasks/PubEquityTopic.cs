@@ -15,7 +15,7 @@ using System.Dynamic;
 using Newtonsoft.Json;
 
 
-namespace MT4Proxy.NET.Service
+namespace MT4Proxy.NET.Tasks
 {
     [MT4Service(EnableZMQ = true)]
     class PubEquityTopic : TaskBase, IService
@@ -79,7 +79,7 @@ namespace MT4Proxy.NET.Service
                 resp.is_succ = result == 0;
                 resp.errMsg = Utils.GetErrorMessage(result);
                 resp.errCode = (int)result;
-                resp.equity = equity;
+                resp.equity = equity.ToString("0.00");
                 Poll.PubMessage(Topic, JsonConvert.SerializeObject(resp));
                 Sleep(2000);
             }

@@ -61,9 +61,6 @@ namespace MT4Proxy.NET.Core
 
         public static void PushTrade(TRANS_TYPE aType, TradeRecordResult aTrade)
         {
-            /*
-             * MT4日期是1970年起按秒计到32位有符号数里，2039年就跪了，不过2039年安卓控制服务器了吧，这玩意应该淘汰了
-             */
             if (aTrade.timestamp < _lastTradeTime)
                 return;
             _queTrades.Enqueue(new Tuple<TRANS_TYPE, TradeRecordResult>(aType, aTrade));

@@ -142,6 +142,7 @@ namespace MT4Proxy.NET.Core
             var pumpCount = int.Parse(config.AppSettings["pump_count"]);
             var mysql = config.AppSettings["mysql_cs"];
 
+            var init_equity = double.Parse(config.AppSettings["init_equity"]);
             MT4Host = string.Format("{0}:{1}", mt4Host, mt4Port);
             MT4AdminID = mt4User;
             MT4Passwd = mt4Paawd;
@@ -151,6 +152,8 @@ namespace MT4Proxy.NET.Core
             MT4DemoAdminID = mt4demoUser;
             MT4DemoPasswd = mt4demoPaawd;
             MT4DemoGroup = mt4demoGroup;
+
+            InitEqutiy = init_equity;
 
             MysqlSyncer.ConnectString = mysql;
             MT4API.init(string.Format("{0}:{1}", mt4Host, mt4Port), mt4User, mt4Paawd, pumpCount);
@@ -188,5 +191,11 @@ namespace MT4Proxy.NET.Core
 
         public static string MT4DemoGroup
         { get; private set; }
+
+        public static double InitEqutiy
+        {
+            get;
+            private set;
+        }
     }
 }

@@ -35,23 +35,33 @@ namespace MT4Proxy.NET.Service
                 var result = api.OpenAccount(args);
                 if(result == RET_CODE.RET_OK)
                 {
-                    var money_args = new TradeTransInfoArgs
+                    if (!is_real && Poll.InitEqutiy > 0)
                     {
-                        type = TradeTransInfoTypes.TT_BR_BALANCE,
-                        cmd = 6,
-                        orderby = Convert.ToInt32(dict["mt4UserID"]),
-                        price = 10000.0
-                    };
-                    result = api.TradeTransaction(money_args);
-                    dynamic resp = new ExpandoObject();
-                    resp.is_succ = result == RET_CODE.RET_OK;
-                    resp.err_msg = Utils.GetErrorMessage(result);
-                    aServer.Output = JsonConvert.SerializeObject(resp);
-                    if(result != RET_CODE.RET_OK)
+                        var money_args = new TradeTransInfoArgs
+                        {
+                            type = TradeTransInfoTypes.TT_BR_BALANCE,
+                            cmd = 6,
+                            orderby = Convert.ToInt32(dict["mt4UserID"]),
+                            price = 10000.0
+                        };
+                        result = api.TradeTransaction(money_args);
+                        dynamic resp = new ExpandoObject();
+                        resp.is_succ = result == RET_CODE.RET_OK;
+                        resp.err_msg = Utils.GetErrorMessage(result);
+                        aServer.Output = JsonConvert.SerializeObject(resp);
+                        if (result != RET_CODE.RET_OK)
+                        {
+                            var logger = LogManager.GetLogger("common");
+                            logger.Error(string.Format("模拟账户充钱失败ID:{0},PASSWD:{1},NAME:{2},EMAIL:{3},GROUP:{4}",
+                            args.login, args.password, args.name, args.email, args.group));
+                        }
+                    }
+                    else
                     {
-                        var logger = LogManager.GetLogger("common");
-                        logger.Error(string.Format("模拟账户充钱失败ID:{0},PASSWD:{1},NAME:{2},EMAIL:{3},GROUP:{4}",
-                        args.login, args.password, args.name, args.email, args.group));
+                        dynamic resp = new ExpandoObject();
+                        resp.is_succ = result == RET_CODE.RET_OK;
+                        resp.err_msg = Utils.GetErrorMessage(result);
+                        aServer.Output = JsonConvert.SerializeObject(resp);
                     }
                 }
                 else

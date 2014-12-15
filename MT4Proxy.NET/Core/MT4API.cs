@@ -77,20 +77,27 @@ namespace MT4Proxy.NET.Core
 
         protected override void OnPumpTrade(TRANS_TYPE aType, TradeRecordResult aRecord)
         {
-            Logger logger = LogManager.GetLogger("common");
-            logger.Info(string.Format("這個單子的時間戳:{0}", aRecord.timestamp));
             MT4Pump.PushTrade(aType, aRecord);
         }
 
         protected override void OnPumpAskBid(SymbolInfoResult[] aSymbols)
         {
             string symbolPattern = @"^(?<symbol>[A-Za-z]+)(?<leverage>\d*)$";
+            string symbolPattern_CFD = @"^(?<symbol>[A-Za-z]+)_(?<number>\d*)$";
             foreach (var symbol in aSymbols)
             {
                 foreach (Match j in Regex.Matches(symbol.symbol, symbolPattern))
                 {
                     var match = j.Groups;
                     var symbol_origin = match["symbol"].ToString().ToUpper();
+                    MT4Pump.PushQuote(symbol_origin, symbol.ask, symbol.bid,
+                        symbol.lasttime.FromTime32());
+                }
+
+                foreach (Match j in Regex.Matches(symbol.symbol, symbolPattern_CFD))
+                {
+                    var match = j.Groups;
+                    var symbol_origin = match["symbol"].ToString();
                     MT4Pump.PushQuote(symbol_origin, symbol.ask, symbol.bid,
                         symbol.lasttime.FromTime32());
                 }
