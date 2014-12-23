@@ -17,18 +17,18 @@ namespace MT4Proxy.NET.Core
         public MT4Pump()
         {
             if(TradesSyncer == null)
-                TradesSyncer = new MysqlSyncer();
+                TradesSyncer = new MysqlServer();
             if (QuoteSyncer == null)
-                QuoteSyncer = new MysqlSyncer();
+                QuoteSyncer = new MysqlServer();
         }
 
-        public static MysqlSyncer TradesSyncer
+        public static MysqlServer TradesSyncer
         {
             get;
             set;
         }
 
-        public static MysqlSyncer QuoteSyncer
+        public static MysqlServer QuoteSyncer
         {
             get;
             set;

@@ -12,25 +12,69 @@ using System.Text.RegularExpressions;
 
 namespace MT4Proxy.NET.Core
 {
-    class MysqlSyncer
+    class MysqlServer
     {
-        public MysqlSyncer()
+        public MysqlServer()
         {
             CreateTime = DateTime.MinValue;
-            CFD_List = new Dictionary<string, double>();
-            CFD_List["WTOil"] = 4500;
-            CFD_List["USDX"] = 4500;
-            CFD_List["DAX"] = 1500;
-            CFD_List["FFI"] = 1500;
-            CFD_List["NK"] = 200;
-            CFD_List["HSI"] = 300;
-            CFD_List["SFC"] = 1000;
-            CFD_List["mDJ"] = 2000;
-            CFD_List["mND"] = 4000;
-            CFD_List["mSP"] = 2000;
         }
 
         private MySqlConnection _connection = null;
+        private MySqlConnection _account_connection = null;
+
+        private MySqlConnection AccountConnection
+        {
+            get
+            {
+                RetryTimes = 3;
+                while (RetryTimes-- > 0)
+                {
+                    try
+                    {
+                        if (_account_connection == null || ((DateTime.Now - CreateTime).TotalSeconds > 30))
+                        {
+                            if (_account_connection != null)
+                            {
+                                try
+                                {
+                                    _account_connection.Close();
+                                    _account_connection = null;
+                                }
+                                catch { }
+                            }
+                            _account_connection = new MySqlConnection(AccountConnectString);
+                            _account_connection.Open();
+                            CreateTime = DateTime.Now;
+                        }
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                        Logger logger = LogManager.GetLogger("common");
+                        logger.Warn(
+                            string.Format("MySQL连接建立失败，一秒之后重试，剩余机会{0}",
+                            RetryTimes + 1), e);
+                        Thread.Sleep(1000);
+                        continue;
+                    }
+                }
+                if (RetryTimes == -1)
+                {
+                    Logger logger = LogManager.GetLogger("common");
+                    logger.Error("MySQL连接建立失败，请立即采取措施保障丢失的数据！");
+                    return null;
+                }
+                else
+                {
+                    return _account_connection;
+                }
+            }
+            set
+            {
+                _account_connection = value;
+            }
+        }
+
         private MySqlConnection Connection
         {
             get
@@ -96,7 +140,7 @@ namespace MT4Proxy.NET.Core
             set;
         }
 
-        private Dictionary<string, double> CFD_List
+        public static Dictionary<string, double> CFD_List
         {
             get;
             set;
@@ -157,7 +201,7 @@ namespace MT4Proxy.NET.Core
                     var pov = 100000.0;
                     if (CFD_List.ContainsKey(symbol))
                         pov = CFD_List[symbol];
-                    Trade2Mysql(aType, aRecord, j, 1, pov, 10.0f);
+                    Trade2Mysql(aType, aRecord, j, 100, pov, 10.0f);
                 }
             }
             catch(Exception e)
@@ -354,8 +398,9 @@ namespace MT4Proxy.NET.Core
                     }
                 }
 
-                sql_cmd = "SELECT * FROM user WHERE mt4_real = @mt4id;";
-                using (var cmd = new MySqlCommand(sql_cmd, Connection))
+                sql_cmd = string.Format("SELECT * FROM user WHERE {0} = @mt4id;", 
+                    AccountMT4FieldName);
+                using (var cmd = new MySqlCommand(sql_cmd, AccountConnection))
                 {
                     cmd.Parameters.AddWithValue("@mt4id", item.Item1);
                     using (var master_reader = cmd.ExecuteReader())
@@ -374,13 +419,13 @@ namespace MT4Proxy.NET.Core
                 }
                 if(dictProfile.ContainsKey(item.Item1) && dictProfitableCount.ContainsKey(item.Item1))
                 {
-                    sql_cmd = "INSERT INTO `master`(`date`,`username`,`sex`,`orders`,`profit_rate`,`pips`, `percent_profitable`) " +
-                    "VALUES(@date, @username, @sex, @orders, @profit_rate, @pips, @percent_profitable);";
+                    sql_cmd = "INSERT INTO `master`(`date`,`username`,`sex`,`orders`, " +
+                    "`profit_rate`,`pips`, `percent_profitable`, `mt4_id`) " +
+                    "VALUES(@date, @username, @sex, @orders, @profit_rate, @pips, " +
+                    "@percent_profitable, @mt4_id);";
                     var percent_profitable = 0.0;
-                    if(item.Item3!=0)
-                    {
+                    if (item.Item3 != 0)
                         percent_profitable = dictProfitableCount[item.Item1] / item.Item3;
-                    }
                     using (var cmd = new MySqlCommand(sql_cmd, Connection))
                     {
                         cmd.Parameters.AddWithValue("@date", now);
@@ -390,6 +435,7 @@ namespace MT4Proxy.NET.Core
                         cmd.Parameters.AddWithValue("@profit_rate", item.Item2);
                         cmd.Parameters.AddWithValue("@pips", item.Item4);
                         cmd.Parameters.AddWithValue("@percent_profitable", percent_profitable);
+                        cmd.Parameters.AddWithValue("@mt4_id", item.Item1);
                         cmd.ExecuteNonQuery();
                     }
                 }
@@ -404,15 +450,17 @@ namespace MT4Proxy.NET.Core
         {
             Logger logger = LogManager.GetLogger("common");
             logger.Info("准备开始同步equity信息到MySQL");
-            string sql = "SELECT DISTINCT mt4_real FROM user WHERE mt4_real IS NOT NULL;";
+            string sql = string.Format(
+                "SELECT DISTINCT {0} FROM user WHERE {0} IS NOT NULL;",
+                AccountMT4FieldName);
             var users = new List<int>();
-            using(var cmd = new MySqlCommand(sql, Connection))
+            using(var cmd = new MySqlCommand(sql, AccountConnection))
             {
                 using(var mt4_reader = cmd.ExecuteReader())
                 {
                     while (mt4_reader.Read())
                     {
-                        var id = int.Parse(mt4_reader["mt4_real"].ToString());
+                        var id = int.Parse(mt4_reader[AccountMT4FieldName].ToString());
                         users.Add(id);
                     }
                 }
@@ -458,7 +506,39 @@ namespace MT4Proxy.NET.Core
             }
         }
 
-        public static string ConnectString
+        public IEnumerable<KeyValuePair<string,string>> PullCopyData()
+        {
+            var list = new LinkedList<KeyValuePair<string, string>>();
+            var sql_cmd = "SELECT * FROM copy;";
+            using (var cmd = new MySqlCommand(sql_cmd, Connection))
+            {
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var from = reader["from_mt4"].ToString();
+                        var to = reader["to_mt4"].ToString();
+                        list.AddLast(new LinkedListNode<KeyValuePair<string, string>>
+                            (new KeyValuePair<string, string>(from, to)));
+                    }
+                }
+            }
+            return list;
+        }
+
+        internal static string ConnectString
+        {
+            get;
+            set;
+        }
+
+        internal static string AccountConnectString
+        {
+            get;
+            set;
+        }
+
+        internal static string AccountMT4FieldName
         {
             get;
             set;

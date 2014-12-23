@@ -12,6 +12,7 @@ using System.Text;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Web.Script.Serialization;
+using System.Diagnostics;
 
 namespace MT4Proxy.NET.Core
 {
@@ -103,6 +104,7 @@ namespace MT4Proxy.NET.Core
             th_pub.Start();
             var jss = new JavaScriptSerializer();
             var polling = new Polling(PollingEvents.RecvReady, repSocket);
+            var watch = new Stopwatch();
             polling.RecvReady += (socket) =>
             {
                 try
@@ -112,7 +114,7 @@ namespace MT4Proxy.NET.Core
                     string api_name = dict["__api"];
                     var mt4_id = 0;
                     if (dict.ContainsKey("mt4UserID"))
-                        mt4_id = (int)dict["mt4UserID"];
+                        mt4_id = Convert.ToInt32(dict["mt4UserID"]);
                     if(_apiDict.ContainsKey(api_name))
                     {
                         var service = _apiDict[api_name];
@@ -121,16 +123,23 @@ namespace MT4Proxy.NET.Core
                         {
                             server.Logger = LogManager.GetLogger("common");
                             server.Logger.Info(string.Format("ZMQ,recv request:{0}", item));
+                            watch.Restart();
                             serviceobj.OnRequest(server, dict);
                             if (server.Output != null)
                             {
-                                server.Logger.Info(string.Format("ZMQ,response:{0}", server.Output));
                                 socket.Send(server.Output);
+                                watch.Stop();
+                                var elsp = watch.ElapsedMilliseconds;
+                                server.Logger.Info(string.Format("ZMQ[{0}ms] response:{1}",
+                                    elsp, server.Output));
                             }
                             else
                             {
-                                server.Logger.Warn(string.Format("ZMQ,response empty,source:{0}", item));
                                 socket.Send(string.Empty);
+                                watch.Stop();
+                                var elsp = watch.ElapsedMilliseconds;
+                                server.Logger.Warn(string.Format("ZMQ[{0}ms] response empty,source:{1}", 
+                                    elsp, item));                            
                             }
                         }
                     }

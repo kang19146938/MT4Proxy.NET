@@ -126,13 +126,17 @@ namespace MT4Proxy.NET.Core
 
         public static void init()
         {
+            Logger logger = LogManager.GetLogger("common");
+            logger.Info(string.Format("配置文件位置:{0}",
+                AppDomain.CurrentDomain.SetupInformation.ConfigurationFile));
+            Console.WriteLine(string.Format("配置文件位置:{0}",
+                AppDomain.CurrentDomain.SetupInformation.ConfigurationFile));
             var config = new ConfigurationManager();
             var mt4Host = config.AppSettings["mt4_host"];
             var mt4Port = int.Parse(config.AppSettings["mt4_port"]);
             var mt4User = int.Parse(config.AppSettings["mt4_user"]);
-            var mt4Paawd = config.AppSettings["mt4_passwd"];
+            var mt4Passwd = config.AppSettings["mt4_passwd"];
             var mt4Group = config.AppSettings["mt4_group"];
-
             var mt4demoHost = config.AppSettings["mt4demo_host"];
             var mt4demoPort = int.Parse(config.AppSettings["mt4demo_port"]);
             var mt4demoUser = int.Parse(config.AppSettings["mt4demo_user"]);
@@ -140,12 +144,11 @@ namespace MT4Proxy.NET.Core
             var mt4demoGroup = config.AppSettings["mt4demo_group"];
 
             var pumpCount = int.Parse(config.AppSettings["pump_count"]);
-            var mysql = config.AppSettings["mysql_cs"];
 
             var init_equity = double.Parse(config.AppSettings["init_equity"]);
             MT4Host = string.Format("{0}:{1}", mt4Host, mt4Port);
             MT4AdminID = mt4User;
-            MT4Passwd = mt4Paawd;
+            MT4Passwd = mt4Passwd;
             MT4Group = mt4Group;
 
             MT4DemoHost = string.Format("{0}:{1}", mt4demoHost, mt4demoPort);
@@ -155,8 +158,22 @@ namespace MT4Proxy.NET.Core
 
             InitEqutiy = init_equity;
 
-            MysqlSyncer.ConnectString = mysql;
-            MT4API.init(string.Format("{0}:{1}", mt4Host, mt4Port), mt4User, mt4Paawd, pumpCount);
+            MysqlServer.ConnectString = config.AppSettings["mysql_cs"];
+            MysqlServer.AccountConnectString = config.AppSettings["mysql_account_cs"];
+            MysqlServer.CFD_List = new Dictionary<string, double>();
+            MysqlServer.CFD_List["WTOil"] = 450000;
+            MysqlServer.CFD_List["USDX"] = 450000;
+            MysqlServer.CFD_List["DAX"] = 150000;
+            MysqlServer.CFD_List["FFI"] = 150000;
+            MysqlServer.CFD_List["NK"] = 20000;
+            MysqlServer.CFD_List["HSI"] = 30000;
+            MysqlServer.CFD_List["SFC"] = 100000;
+            MysqlServer.CFD_List["mDJ"] = 200000;
+            MysqlServer.CFD_List["mND"] = 400000;
+            MysqlServer.CFD_List["mSP"] = 200000;
+            MysqlServer.AccountMT4FieldName = config.AppSettings["account_field_name"];
+
+            MT4API.init(string.Format("{0}:{1}", mt4Host, mt4Port), mt4User, mt4Passwd, pumpCount);
             MT4Pump.StartPump();
             var thDog = new Thread(DogProc);
             thDog.IsBackground = true;
