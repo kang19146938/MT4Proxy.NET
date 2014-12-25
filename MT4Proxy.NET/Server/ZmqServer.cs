@@ -85,7 +85,7 @@ namespace MT4Proxy.NET.Core
 
         public void Init()
         {
-            Logger initlogger = LogManager.GetLogger("common");
+            var initlogger = LogManager.GetLogger("common");
             var config = new ConfigurationManager();
             if(!bool.Parse(config.AppSettings["enable_zmq"]))
             {
@@ -164,7 +164,7 @@ namespace MT4Proxy.NET.Core
                 }
                 catch(Exception e)
                 {
-                    Logger logger = LogManager.GetLogger("clr_error");
+                    var logger = LogManager.GetLogger("clr_error");
                     logger.Error("处理单个ZMQ请求失败", e.StackTrace);
                     socket.Send(string.Empty);
                 }
@@ -209,7 +209,6 @@ namespace MT4Proxy.NET.Core
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
         }
         protected virtual void Dispose(bool disposing)
         {

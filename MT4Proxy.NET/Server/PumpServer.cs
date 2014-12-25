@@ -20,7 +20,7 @@ namespace MT4Proxy.NET
             if (PumperCount < 1)
             {
                 string errInfo = "接收MT4推送的线程数量不正确";
-                Logger logger = LogManager.GetLogger("common");
+                var logger = LogManager.GetLogger("common");
                 logger.Error(errInfo);
                 throw new Exception(errInfo);
             }
@@ -139,7 +139,7 @@ namespace MT4Proxy.NET
             {
                 if (!mt4.IsPumpAlive())
                 {
-                    Logger logger = LogManager.GetLogger("common");
+                    var logger = LogManager.GetLogger("common");
                     logger.Warn(
                         string.Format("MT4推送接收连接建立失败，一秒之后重试，剩余机会{0}", 
                         retryTimes + 1));
@@ -151,7 +151,7 @@ namespace MT4Proxy.NET
             }
             if(retryTimes == -1)
             {
-                Logger logger = LogManager.GetLogger("common");
+                var logger = LogManager.GetLogger("common");
                 logger.Error("MT4推送接收连接建立失败，请立即采取措施保障丢失的数据！");
             }
             else

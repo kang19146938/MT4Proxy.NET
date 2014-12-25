@@ -10,7 +10,7 @@ namespace MT4Proxy.NET
     {
         public static void Main(string[] args)
         {
-            Logger logger = LogManager.GetLogger("common");
+            var logger = LogManager.GetLogger("common");
             logger.Warn("警告现在使用一般启动方式，建议使用Windows服务模式启动");
             var result = Boot(args);
             if (result)
@@ -23,7 +23,7 @@ namespace MT4Proxy.NET
 
         public static void Start(string[] args)
         {
-            Logger logger = LogManager.GetLogger("common");
+            var logger = LogManager.GetLogger("common");
             logger.Info("检测到使用Windows服务模式启动");
             Boot(args);
         }
@@ -48,7 +48,7 @@ namespace MT4Proxy.NET
                         "s|sync执行当天数据聚合\nh|?|help:显示帮助信息"));
                     return false;
                 }
-                Logger logger = LogManager.GetLogger("common");
+                var logger = LogManager.GetLogger("common");
                 MT4CliWrapper.MT4Wrapper.OnLog += (a) => { logger.Info(a); };
                 if (Environment.Is64BitProcess)
                     logger.Warn("警告，在64位环境启动");
@@ -86,7 +86,7 @@ namespace MT4Proxy.NET
 
         public static void Stop()
         {
-            Logger logger = LogManager.GetLogger("common");
+            var logger = LogManager.GetLogger("common");
             logger.Info("收到windows服务停止信号");
             ServerContainer.StopAll();
         }

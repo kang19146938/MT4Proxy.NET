@@ -123,7 +123,7 @@ namespace MT4Proxy.NET.Core
                     }
                     catch (Exception e)
                     {
-                        Logger logger = LogManager.GetLogger("common");
+                        var logger = LogManager.GetLogger("common");
                         logger.Warn(
                             string.Format("MySQL连接建立失败，一秒之后重试，剩余机会{0}",
                             RetryTimes + 1), e);
@@ -133,7 +133,7 @@ namespace MT4Proxy.NET.Core
                 }
                 if (RetryTimes == -1)
                 {
-                    Logger logger = LogManager.GetLogger("common");
+                    var logger = LogManager.GetLogger("common");
                     logger.Error("MySQL连接建立失败，请立即采取措施保障丢失的数据！");
                     return null;
                 }

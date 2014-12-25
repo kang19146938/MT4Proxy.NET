@@ -10,6 +10,7 @@ using System.Diagnostics;
 using NLog;
 using NLog.Internal;
 using System.Reflection;
+using System.IO;
 
 namespace MT4Proxy.NET.Core
 {
@@ -93,7 +94,7 @@ namespace MT4Proxy.NET.Core
         {
             try
             {
-                Logger logger = LogManager.GetLogger("beat");
+                var logger = LogManager.GetLogger("beat");
                 while (true)
                 {
                     logger.Trace(string.Format("临时MT4池闲置:{0},会话MT4池闲置:{1}", _idel.Count, Poll.Keys.Count()));
@@ -139,11 +140,25 @@ namespace MT4Proxy.NET.Core
 
         public static void init()
         {
-            Logger logger = LogManager.GetLogger("common");
+            var logger = LogManager.GetLogger("common");
+            var configPath = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile;
             logger.Info(string.Format("配置文件位置:{0}",
-                AppDomain.CurrentDomain.SetupInformation.ConfigurationFile));
+                configPath));
             Console.WriteLine(string.Format("Config file path:{0}",
-                AppDomain.CurrentDomain.SetupInformation.ConfigurationFile));
+                configPath));
+            if(!File.Exists(configPath))
+            {
+                throw new Exception("配置文件不存在！");
+            }
+            ConfigObject();
+            var thDog = new Thread(DogProc);
+            thDog.IsBackground = true;
+            thDog.Start();
+            ServerContainer.ForkServer<PumpServer>();
+        }
+
+        private static void ConfigObject()
+        {
             var config = new ConfigurationManager();
             Assembly.GetExecutingAssembly().GetTypes()
                 .Where(i => i.GetCustomAttribute<ConfigAttribute>(true) != null)
@@ -154,10 +169,6 @@ namespace MT4Proxy.NET.Core
                     item.LoadConfig(config);
                     return true;
                 });
-            var thDog = new Thread(DogProc);
-            thDog.IsBackground = true;
-            thDog.Start();
-            ServerContainer.ForkServer<PumpServer>();
         }
 
         public static void uninit()

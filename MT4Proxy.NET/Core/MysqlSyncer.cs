@@ -68,7 +68,7 @@ namespace MT4Proxy.NET.Core
                     }
                     catch (Exception e)
                     {
-                        Logger logger = LogManager.GetLogger("common");
+                        var logger = LogManager.GetLogger("common");
                         logger.Warn(
                             string.Format("MySQL连接建立失败，一秒之后重试，剩余机会{0}",
                             RetryTimes + 1), e);
@@ -78,7 +78,7 @@ namespace MT4Proxy.NET.Core
                 }
                 if (RetryTimes == -1)
                 {
-                    Logger logger = LogManager.GetLogger("common");
+                    var logger = LogManager.GetLogger("common");
                     logger.Error("MySQL连接建立失败，请立即采取措施保障丢失的数据！");
                     return null;
                 }
@@ -121,7 +121,7 @@ namespace MT4Proxy.NET.Core
                     }
                     catch(Exception e)
                     {
-                        Logger logger = LogManager.GetLogger("common");
+                        var logger = LogManager.GetLogger("common");
                         logger.Warn(
                             string.Format("MySQL连接建立失败，一秒之后重试，剩余机会{0}",
                             RetryTimes + 1), e);
@@ -131,7 +131,7 @@ namespace MT4Proxy.NET.Core
                 }
                 if (RetryTimes == -1)
                 {
-                    Logger logger = LogManager.GetLogger("common");
+                    var logger = LogManager.GetLogger("common");
                     logger.Error("MySQL连接建立失败，请立即采取措施保障丢失的数据！");
                     return null;
                 }
@@ -186,7 +186,7 @@ namespace MT4Proxy.NET.Core
                         }
                         catch (Exception e)
                         {
-                            Logger logger = LogManager.GetLogger("common");
+                            var logger = LogManager.GetLogger("common");
                             logger.Error(string.Format(
                                 "行情MySQL操作失败,错误信息{0}\nSymbol:{1},Date:{2},Ask:{3},Bid:{4}",
                                 e.Message, i.Item1, i.Item4, i.Item2, i.Item3));
@@ -224,7 +224,7 @@ namespace MT4Proxy.NET.Core
             }
             catch(Exception e)
             {
-                Logger logger = LogManager.GetLogger("common");
+                var logger = LogManager.GetLogger("common");
                 if(e is MySqlException)
                 {
                     var e_mysql = e as MySqlException;
@@ -368,7 +368,7 @@ namespace MT4Proxy.NET.Core
 
         public void SyncMaster()
         {
-            Logger logger = LogManager.GetLogger("common");
+            var logger = LogManager.GetLogger("common");
             logger.Info("准备开始同步高手榜到MySQL");
             var now = DateTime.UtcNow.Date;
             var start_date = DateTime.UtcNow.AddDays(-30).Date;
@@ -466,7 +466,7 @@ namespace MT4Proxy.NET.Core
 
         public void SyncEquity()
         {
-            Logger logger = LogManager.GetLogger("common");
+            var logger = LogManager.GetLogger("common");
             logger.Info("准备开始同步equity信息到MySQL");
             string sql = string.Format(
                 "SELECT DISTINCT {0} FROM user WHERE {0} IS NOT NULL;",
