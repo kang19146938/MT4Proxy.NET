@@ -8,7 +8,7 @@ namespace MT4Proxy.NET.Service
     [MT4Service(EnableZMQ = true)]
     class Pay : IService
     {
-        public void OnRequest(IServer aServer, dynamic aJson)
+        public void OnRequest(IInputOutput aServer, dynamic aJson)
         {
             var dict = aJson;
             var args = new TradeTransInfoArgs

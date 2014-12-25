@@ -12,7 +12,7 @@ namespace MT4Proxy.NET.Service
     [MT4Service(EnableZMQ = true)]
     class ServerTime : IService
     {
-        public void OnRequest(IServer aServer, dynamic aJson)
+        public void OnRequest(IInputOutput aServer, dynamic aJson)
         {
             var time = aServer.MT4.ServerTime();
             dynamic resp = new ExpandoObject();

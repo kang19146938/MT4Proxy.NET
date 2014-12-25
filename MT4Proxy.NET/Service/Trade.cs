@@ -11,7 +11,7 @@ namespace MT4Proxy.NET.Service
     class Trade : IService
     {
         private static SortedSet<int> _leverageSet = new SortedSet<int>(new int[] { 25, 50, 100, 200 });
-        public void OnRequest(IServer aServer, dynamic aJson)
+        public void OnRequest(IInputOutput aServer, dynamic aJson)
         {
             dynamic resp = new ExpandoObject();
             var dict = aJson;

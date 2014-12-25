@@ -35,7 +35,7 @@ namespace MT4Proxy.NET.Tasks
             set;
         }
 
-        public void OnRequest(IServer aServer, dynamic aJson)
+        public void OnRequest(IInputOutput aServer, dynamic aJson)
         {
             int mt4_id = aJson["mt4UserID"];
             int pub_topic = aJson["topic"];

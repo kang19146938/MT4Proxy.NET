@@ -6,10 +6,7 @@ using System.Threading.Tasks;
 
 namespace MT4Proxy.NET.Core
 {
-    interface IServer
+    public class ConfigAttribute : Attribute
     {
-        void Initialize();
-
-        void Stop();
     }
 }

@@ -9,6 +9,7 @@ using NLog;
 using System.Collections.Concurrent;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
+using MT4Proxy.NET.EventArg;
 
 namespace MT4Proxy.NET.Core
 {
@@ -77,8 +78,13 @@ namespace MT4Proxy.NET.Core
 
         protected override void OnPumpTrade(TRANS_TYPE aType, TradeRecordResult aRecord)
         {
-            MT4Pump.PushTrade(aType, aRecord);
+            var handler = OnNewTrade;
+            if(handler != null)
+                handler(this, new TradeInfoEventArgs(aType, aRecord));
         }
+
+        public event EventHandler<TradeInfoEventArgs> OnNewTrade = null;
+        public event EventHandler<QuoteInfoEventArgs> OnNewQuote = null;
 
         protected override void OnPumpAskBid(SymbolInfoResult[] aSymbols)
         {
@@ -87,21 +93,20 @@ namespace MT4Proxy.NET.Core
             foreach (var symbol in aSymbols)
             {
                 foreach (Match j in Regex.Matches(symbol.symbol, symbolPattern))
-                {
-                    var match = j.Groups;
-                    var symbol_origin = match["symbol"].ToString().ToUpper();
-                    MT4Pump.PushQuote(symbol_origin, symbol.ask, symbol.bid,
-                        symbol.lasttime.FromTime32());
-                }
-
+                    InvokeQuote(symbol, j);
                 foreach (Match j in Regex.Matches(symbol.symbol, symbolPattern_CFD))
-                {
-                    var match = j.Groups;
-                    var symbol_origin = match["symbol"].ToString();
-                    MT4Pump.PushQuote(symbol_origin, symbol.ask, symbol.bid,
-                        symbol.lasttime.FromTime32());
-                }
+                    InvokeQuote(symbol, j);
             }
+        }
+
+        private void InvokeQuote(SymbolInfoResult symbol, Match j)
+        {
+            var match = j.Groups;
+            var symbol_origin = match["symbol"].ToString().ToUpper();
+            var handler = OnNewQuote;
+            if (handler != null)
+                handler(this, new QuoteInfoEventArgs(symbol_origin,
+                    symbol.ask, symbol.bid, symbol.lasttime));
         }
 
         private static object FetchCache(IntPtr aKey)

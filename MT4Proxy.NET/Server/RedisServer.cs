@@ -13,7 +13,7 @@ using System.Web.Script.Serialization;
 
 namespace MT4Proxy.NET.Core
 {
-    public class RedisServer : IServer, IDisposable
+    public class RedisServer : IInputOutput, IDisposable
     {
         private static ConnectionMultiplexer _redis = null;
         private static ConfigurationManager _config = new ConfigurationManager();

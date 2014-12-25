@@ -67,10 +67,8 @@ namespace MT4Proxy.NET
                     System.Threading.Thread.Sleep(10000);
                     return false;
                 }
-                logger.Info("准备启动Redis监听服务");
-                RedisServer.Init();
                 logger.Info("准备启动Zmq监听服务");
-                ZmqServer.Init();
+                ServerContainer.ForkServer(typeof(ZmqServer));
                 logger.Info("初始工作已完成");
                 return true;
             }

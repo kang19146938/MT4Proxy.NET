@@ -1,38 +1,33 @@
-﻿using System;
+﻿using MT4CliWrapper;
+using MT4Proxy.NET.Core;
+using MT4Proxy.NET.EventArg;
+using NLog;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
-using NLog;
-using System.Collections.Concurrent;
-using MT4CliWrapper;
-using System.Text.RegularExpressions;
-using Castle.Zmq;
-using MT4Proxy.NET.EventArg;
 
-namespace MT4Proxy.NET.Core
+namespace MT4Proxy.NET
 {
-    class MT4Pump
+    internal class PumpServer: IServer
     {
-        public MT4Pump()
+        public void Initialize()
         {
-            if(TradesSyncer == null)
-                TradesSyncer = new MysqlServer();
-            if (QuoteSyncer == null)
-                QuoteSyncer = new MysqlServer();
+            ServerContainer.ForkServer(typeof(SaveServer));
+            ServerContainer.ForkServer(typeof(CopyServer));
         }
 
-        public static MysqlServer TradesSyncer
+        public void Stop()
         {
-            get;
-            set;
+
         }
 
-        public static MysqlServer QuoteSyncer
+        public PumpServer()
         {
-            get;
-            set;
+
         }
 
         private MT4API MT4
@@ -56,28 +51,11 @@ namespace MT4Proxy.NET.Core
         private static volatile int _lastTradeTime = 0;
         private static ConcurrentBag<int> _tradeOrders = new ConcurrentBag<int>();
 
-        private static Timer _quoteTimer = null;
         private static ConcurrentQueue<Tuple<string, double, double, DateTime>>
             _queQuote = new ConcurrentQueue<Tuple<string, double, double, DateTime>>();
 
-        private static CopyServer _copyServer = null;
 
-        public static void PushTrade(TRANS_TYPE aType, TradeRecordResult aTrade)
-        {
-            if (aTrade.timestamp < _lastTradeTime)
-                return;
-            _queTrades.Enqueue(new Tuple<TRANS_TYPE, TradeRecordResult>(aType, aTrade));
-            _tradeSignal.Release();
-        }
-
-        public static void PushQuote(string aSymbol, double aAsk, double aBid, 
-            DateTime aTimestamp)
-        {
-            _queQuote.Enqueue(new Tuple<string, double, double, DateTime>
-                (aSymbol, aAsk, aBid , aTimestamp));
-        }
-
-        private static void SaveTradeProc(object aArg)
+        private void SaveTradeProc(object aArg)
         {
             Tuple<TRANS_TYPE, TradeRecordResult> item = null;
             while (EnableRestart)
@@ -96,13 +74,13 @@ namespace MT4Proxy.NET.Core
                 if (_tradeOrders.Contains(trade.order))
                     continue;
                 _tradeOrders.Add(trade.order);
-                TradesSyncer.PushTrade(trade_type, trade);
-                if (_copyServer != null)
-                    _copyServer.PushTrade(trade_type, trade);
+                var handler = OnNewTrade;
+                if (handler != null)
+                    handler(this, new TradeInfoEventArgs(trade_type, trade));
             }
         }
 
-        public static void StartPump()
+        public void StartPump()
         {
             EnableRestart = true;
             if (_tradeThread == null)
@@ -114,7 +92,8 @@ namespace MT4Proxy.NET.Core
                 {
                     var timer = new Timer(10000);
                     timer.Interval = 10000;
-                    var pump = new MT4Pump() { Timer = timer };
+                    var pump = this;
+                    pump.Timer = timer;
                     timer.Elapsed += (sender, e) =>
                     {
                         pump.RestartPump(pump);
@@ -122,35 +101,9 @@ namespace MT4Proxy.NET.Core
                     pump.RestartPump(pump);
                 }
             }
-            if( _quoteTimer == null)
-            {
-                _quoteTimer = new Timer(10000);
-                _quoteTimer.Elapsed += SaveQuoteProc;
-                SaveQuoteProc(_quoteTimer, null);
-            }
         }
 
-        private static void SaveQuoteProc(object sender , ElapsedEventArgs e)
-        {
-            var timer = sender as Timer;
-            timer.Stop();
-            var dictBuffer = new Dictionary<Tuple<string, DateTime>, Tuple<double, double>>();
-            while(!_queQuote.IsEmpty)
-            {
-                Tuple<string, double, double, DateTime> item = null;
-                _queQuote.TryDequeue(out item);
-                var dayFormat = item.Item4.Date;
-                var key = new Tuple<string, DateTime>(item.Item1, dayFormat);
-                if(!dictBuffer.ContainsKey(key))
-                    dictBuffer[key] = new Tuple<double, double>(item.Item2, item.Item3);
-            }
-            var items = dictBuffer.Select(i => new Tuple<string, double, double, DateTime>
-                (i.Key.Item1, i.Value.Item1, i.Value.Item2, i.Key.Item2));
-             QuoteSyncer.UpdateQuote(items);
-            timer.Start();
-        }
-
-        private void RestartPump(MT4Pump aPump)
+        private void RestartPump(PumpServer aPump)
         {
             aPump.Timer.Stop();
             if (!EnableRestart)
@@ -161,7 +114,7 @@ namespace MT4Proxy.NET.Core
                 }
                 return;
             }
-            int retryTimes = 3;
+            int retryTimes = 5;
             var mt4 = new MT4API(true);
             while(retryTimes-- > 0)
             {
@@ -185,6 +138,7 @@ namespace MT4Proxy.NET.Core
             else
             {
                 mt4.OnNewTrade += WhenMT4NewTrade;
+                mt4.OnNewQuote += WhenMT4NewQuote;
                 if (aPump.MT4 != null)
                     FreeMT4(aPump);
                 aPump.MT4 = mt4;
@@ -192,20 +146,27 @@ namespace MT4Proxy.NET.Core
             aPump.Timer.Start();
         }
 
+        void WhenMT4NewQuote(object sender, QuoteInfoEventArgs e)
+        {
+            var handler = OnNewQuote;
+            if (handler != null)
+                handler(sender, e);
+        }
+
         private void WhenMT4NewTrade(object sender, TradeInfoEventArgs e)
         {
             var handler = OnNewTrade;
             if(handler != null)
-            {
                 handler(sender, e);
-            }
         }
 
         public static event EventHandler<TradeInfoEventArgs> OnNewTrade = null;
+        public static event EventHandler<QuoteInfoEventArgs> OnNewQuote = null;
 
-        private void FreeMT4(MT4Pump aPump)
+        private void FreeMT4(PumpServer aPump)
         {
             aPump.MT4.OnNewTrade -= WhenMT4NewTrade;
+            aPump.MT4.OnNewQuote -= WhenMT4NewQuote;
             aPump.MT4.Dispose();
             aPump.MT4 = null;
         }
