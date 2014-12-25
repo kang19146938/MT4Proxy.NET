@@ -29,15 +29,22 @@ namespace MT4Proxy.NET
         private int PumperCount
         { get; set; }
 
+        private static bool EnableRunning = false;
+        private List<PumpServer> _lstRunning = new List<PumpServer>();
+
         public void Initialize()
         {
+            EnableRunning = true;
             ServerContainer.ForkServer(typeof(SaveServer));
             ServerContainer.ForkServer(typeof(CopyServer));
         }
 
         public void Stop()
         {
-
+            EnableRunning = false;
+            foreach(var i in _lstRunning)
+                i.FreeMT4(i);
+            ServerContainer.StopFinish();
         }
 
         public PumpServer()
@@ -57,8 +64,6 @@ namespace MT4Proxy.NET
             set;
         }
 
-        public static volatile bool EnableRestart;
-
         private static System.Threading.Thread _tradeThread = null;
         private static ConcurrentQueue<Tuple<TRANS_TYPE, TradeRecordResult>>
             _queTrades = new ConcurrentQueue<Tuple<TRANS_TYPE, TradeRecordResult>>();
@@ -73,9 +78,8 @@ namespace MT4Proxy.NET
         private void SaveTradeProc(object aArg)
         {
             Tuple<TRANS_TYPE, TradeRecordResult> item = null;
-            while (EnableRestart)
+            while (Utils.SignalWait(ref EnableRunning, _tradeSignal))
             {
-                _tradeSignal.WaitOne();
                 _queTrades.TryDequeue(out item);
                 if (item == null)
                     continue;
@@ -95,9 +99,8 @@ namespace MT4Proxy.NET
             }
         }
 
-        public void StartPump()
+        private void StartPump()
         {
-            EnableRestart = true;
             if (_tradeThread == null)
             {
                 _tradeThread = new System.Threading.Thread(SaveTradeProc);
@@ -107,12 +110,13 @@ namespace MT4Proxy.NET
                 {
                     var timer = new Timer(10000);
                     timer.Interval = 10000;
-                    var pump = this;
+                    var pump = new PumpServer();
                     pump.Timer = timer;
                     timer.Elapsed += (sender, e) =>
                     {
                         pump.RestartPump(pump);
                     };
+                    _lstRunning.Add(pump);
                     pump.RestartPump(pump);
                 }
             }
@@ -121,7 +125,7 @@ namespace MT4Proxy.NET
         private void RestartPump(PumpServer aPump)
         {
             aPump.Timer.Stop();
-            if (!EnableRestart)
+            if (!EnableRunning)
             {
                 if(aPump.MT4 != null)
                 {
@@ -152,8 +156,8 @@ namespace MT4Proxy.NET
             }
             else
             {
-                mt4.OnNewTrade += WhenMT4NewTrade;
-                mt4.OnNewQuote += WhenMT4NewQuote;
+                mt4.OnNewTrade += WhenNewTrade;
+                mt4.OnNewQuote += WhenNewQuote;
                 if (aPump.MT4 != null)
                     FreeMT4(aPump);
                 aPump.MT4 = mt4;
@@ -161,14 +165,14 @@ namespace MT4Proxy.NET
             aPump.Timer.Start();
         }
 
-        void WhenMT4NewQuote(object sender, QuoteInfoEventArgs e)
+        void WhenNewQuote(object sender, QuoteInfoEventArgs e)
         {
             var handler = OnNewQuote;
             if (handler != null)
                 handler(sender, e);
         }
 
-        private void WhenMT4NewTrade(object sender, TradeInfoEventArgs e)
+        private void WhenNewTrade(object sender, TradeInfoEventArgs e)
         {
             var handler = OnNewTrade;
             if(handler != null)
@@ -180,8 +184,8 @@ namespace MT4Proxy.NET
 
         private void FreeMT4(PumpServer aPump)
         {
-            aPump.MT4.OnNewTrade -= WhenMT4NewTrade;
-            aPump.MT4.OnNewQuote -= WhenMT4NewQuote;
+            aPump.MT4.OnNewTrade -= WhenNewTrade;
+            aPump.MT4.OnNewQuote -= WhenNewQuote;
             aPump.MT4.Dispose();
             aPump.MT4 = null;
         }

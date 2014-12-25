@@ -20,16 +20,19 @@ namespace MT4Proxy.NET.Core
     {
         public void Initialize()
         {
+            EnableRunning = true;
             Init();
         }
 
         public void Stop()
         {
-            
+            EnableRunning = false;
+            ServerContainer.StopFinish();
         }
 
-        private static Context _zmqCtx = null;
-        private static ConcurrentDictionary<string, Type> _apiDict = new ConcurrentDictionary<string, Type>();
+        private static bool EnableRunning = false;
+        private Context _zmqCtx = null;
+        private ConcurrentDictionary<string, Type> _apiDict = new ConcurrentDictionary<string, Type>();
         private static IZmqSocket _publisher = null;
         private static Semaphore _pubSignal = new Semaphore(0, 20000);
         private static ConcurrentQueue<Tuple<string, string>>
@@ -63,7 +66,7 @@ namespace MT4Proxy.NET.Core
 
         private static void PubProc(object aArg)
         {
-            while(MT4Pump.EnableRestart)
+            while(EnableRunning)
             {
                 _pubSignal.WaitOne();
                 Tuple<string, string> item = null;
@@ -80,7 +83,7 @@ namespace MT4Proxy.NET.Core
             }
         }
 
-        public static void Init()
+        public void Init()
         {
             Logger initlogger = LogManager.GetLogger("common");
             var config = new ConfigurationManager();
@@ -167,11 +170,12 @@ namespace MT4Proxy.NET.Core
                 }
                 finally
                 {
-                    if (MT4Pump.EnableRestart)
+                    if (EnableRunning)
                         Task.Factory.StartNew(() => { polling.PollForever(); });
                 }
             };
-            Task.Factory.StartNew(() => { polling.PollForever(); });
+            if (EnableRunning)
+                Task.Factory.StartNew(() => { polling.PollForever(); });
         }
 
         public void Pub(string aChannel, string aJson)

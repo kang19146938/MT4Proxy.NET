@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,6 +28,23 @@ namespace MT4Proxy.NET.Core
             items.Reverse();
             foreach (var i in items)
                 i.Stop();
+            var finish_count = 0;
+            while(finish_count < items.Count)
+            {
+                var fine = _stopSignal.WaitOne(10000);
+                if (fine)
+                    finish_count++;
+                else
+                    return;
+            }
         }
+
+        public static void StopFinish()
+        {
+            _stopSignal.Release();
+        }
+
+        private static System.Threading.Semaphore _stopSignal = 
+            new System.Threading.Semaphore(0, 20000);
     }
 }

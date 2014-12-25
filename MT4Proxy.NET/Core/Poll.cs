@@ -13,12 +13,20 @@ using System.Reflection;
 
 namespace MT4Proxy.NET.Core
 {
-    internal class Poll
+    internal class Poll : ConfigBase
     {
         private static ConcurrentDictionary<int, MT4API> _poll = new ConcurrentDictionary<int, MT4API>();
         private static ConcurrentQueue<MT4API> _idel = new ConcurrentQueue<MT4API>();
         static int _taskid = 0;
 
+        internal override void LoadConfig(ConfigurationManager aConfig)
+        {
+            MT4Host = aConfig.AppSettings["mt4_host"];
+            MT4AdminID = int.Parse(aConfig.AppSettings["mt4_user"]);
+            MT4Passwd = aConfig.AppSettings["mt4_passwd"];
+            MT4Group = aConfig.AppSettings["mt4_group"];
+            MT4API.init(MT4Host, MT4AdminID, MT4Passwd);
+        }
         public static MT4Wrapper Fetch(int id)
         {
             MT4API fetch = null;
@@ -97,13 +105,9 @@ namespace MT4Proxy.NET.Core
                     {
                         _idel.TryDequeue(out fetch);
                         if (fetch != null && !fetch.IsOutOfDate)
-                        {
                             templst.Add(fetch);
-                        }
                         else if (fetch != null)
-                        {
                             fetch.Dispose();
-                        }
                         count--;
                     } while (count > 0 && fetch != null);
                     foreach(var i in templst)
@@ -141,24 +145,18 @@ namespace MT4Proxy.NET.Core
             Console.WriteLine(string.Format("Config file path:{0}",
                 AppDomain.CurrentDomain.SetupInformation.ConfigurationFile));
             var config = new ConfigurationManager();
-            MT4Host = config.AppSettings["mt4_host"];
-            MT4AdminID = int.Parse(config.AppSettings["mt4_user"]);
-            MT4Passwd = config.AppSettings["mt4_passwd"];
-            MT4Group = config.AppSettings["mt4_group"];
-            MT4API.init(MT4Host, MT4AdminID, MT4Passwd);
             Assembly.GetExecutingAssembly().GetTypes()
-                .Where(i => i.GetCustomAttributes(typeof(ConfigAttribute), true).Length > 0)
+                .Where(i => i.GetCustomAttribute<ConfigAttribute>(true) != null)
                 .Where(i => i.FullName != typeof(ConfigBase).FullName)
-                .Select(i =>
+                .All(i =>
                 {
                     var item = Activator.CreateInstance(i) as ConfigBase;
                     item.LoadConfig(config);
-                    return i;
+                    return true;
                 });
             var thDog = new Thread(DogProc);
             thDog.IsBackground = true;
             thDog.Start();
-            ServerContainer.ForkServer(typeof(ZmqServer));
             ServerContainer.ForkServer(typeof(PumpServer));
         }
 

@@ -7,11 +7,23 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Dynamic;
+using System.Threading;
 
 namespace MT4Proxy.NET.Core
 {
     public static class Utils
     {
+        public static bool SignalWait(ref bool aCrond, Semaphore aSignal, int aTimeoutMS=1000)
+        {
+            while (true)
+            {
+                if (!aCrond) return false;
+                var result = aSignal.WaitOne(aTimeoutMS);
+                if (result) break;
+            }
+            return true;
+        }
+
         public static dynamic MakeResponseObject(bool is_succ, int errCode, string errMsg)
         {
             dynamic ret = new ExpandoObject();

@@ -31,8 +31,11 @@ namespace MT4Proxy.NET
             set;
         }
 
+        private bool EnableRunning = false;
+
         public void Initialize()
         {
+            EnableRunning = true;
             PumpServer.OnNewQuote += WhenNewQuote;
             PumpServer.OnNewTrade += WhenNewTrade;
             if (_quoteTimer == null)
@@ -46,13 +49,13 @@ namespace MT4Proxy.NET
                 _tradeThread = new System.Threading.Thread(
                     () => 
                     {
-                        while(MT4Pump.EnableRestart)
+                        while(Utils.SignalWait(ref EnableRunning, _tradeSignal))
                         {
-                            _tradeSignal.WaitOne();
                             TradeInfoEventArgs item = null;
                             _queTrades.TryDequeue(out item);
                             TradesSyncer.PushTrade(item.TradeType, item.Trade);
                         }
+                        ServerContainer.StopFinish();
                     });
                 _tradeThread.IsBackground = true;
                 _tradeThread.Start();
@@ -61,6 +64,7 @@ namespace MT4Proxy.NET
 
         public void Stop()
         {
+            EnableRunning = false;
             PumpServer.OnNewQuote -= WhenNewQuote;
             PumpServer.OnNewTrade -= WhenNewTrade;
         }
@@ -82,7 +86,8 @@ namespace MT4Proxy.NET
             var items = dictBuffer.Select(i => new Tuple<string, double, double, DateTime>
                 (i.Key.Item1, i.Value.Item1, i.Value.Item2, i.Key.Item2));
             QuoteSyncer.UpdateQuote(items);
-            timer.Start();
+            if(EnableRunning)
+                timer.Start();
         }
 
         void WhenNewTrade(object sender, TradeInfoEventArgs e)

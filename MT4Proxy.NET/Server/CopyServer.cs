@@ -83,8 +83,11 @@ namespace MT4Proxy.NET.Core
             CreateTime = DateTime.MinValue;
         }
 
+        private bool EnableRunning;
+
         public void Initialize()
         {
+            EnableRunning = true;
             if (_thProc == null)
             {
                 _thProc = new Thread(CopyProc);
@@ -161,11 +164,7 @@ namespace MT4Proxy.NET.Core
 
         public void Stop()
         {
-            if(_thProc != null)
-            {
-                _thProc.Abort();
-                _thProc = null;
-            }
+            EnableRunning = false;
         }
 
         public void PushTrade(TRANS_TYPE aType, TradeRecordResult aTrade)
@@ -177,9 +176,8 @@ namespace MT4Proxy.NET.Core
         private void CopyProc()
         {
             Tuple<TRANS_TYPE, TradeRecordResult> item = null;
-            while (MT4Pump.EnableRestart)
+            while (Utils.SignalWait(ref EnableRunning, _signal))
             {
-                _signal.WaitOne();
                 _queNewTrades.TryDequeue(out item);
                 var trade_type = item.Item1;
                 var trade = item.Item2;
@@ -259,6 +257,7 @@ namespace MT4Proxy.NET.Core
                 }
                 Poll.Release(api);
             }
+            ServerContainer.StopFinish();
         }
 
         private bool IsCopyTrade(int aOrder)
