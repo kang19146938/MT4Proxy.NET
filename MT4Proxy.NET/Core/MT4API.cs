@@ -15,20 +15,9 @@ namespace MT4Proxy.NET.Core
 {
     internal class MT4API : MT4Wrapper
     {
-        public static void init(string aServerAddr, int aUser, string aPasswd, int aPumperCount)
+        public static void init(string aServerAddr, int aUser, string aPasswd)
         {
-            if (aPumperCount < 1)
-            {
-                string errInfo = "接收MT4推送的线程数量不正确";
-                Logger logger = LogManager.GetLogger("common");
-                logger.Error(errInfo);
-                throw new Exception(errInfo);
-            }
-            else
-            {
-                PumperCount = aPumperCount;
-                MT4Wrapper.init(aServerAddr, aUser, aPasswd, FetchCache, UpdateCache, RemoveCache);
-            }
+            MT4Wrapper.init(aServerAddr, aUser, aPasswd, FetchCache, UpdateCache, RemoveCache);
         }
 
         public MT4API(bool aPump):base(aPump)

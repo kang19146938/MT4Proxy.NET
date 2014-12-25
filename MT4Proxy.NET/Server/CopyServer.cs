@@ -17,8 +17,67 @@ namespace MT4Proxy.NET.Core
     /// <summary>
     /// 单线程的复制系统,后面还是可以横扩的
     /// </summary>
-    class CopyServer: IServer
+    class CopyServer : ConfigBase, IServer
     {
+        internal override void LoadConfig(NLog.Internal.ConfigurationManager aConfig)
+        {
+            RedisHost = aConfig.AppSettings["redis_host"];
+            RedisPort = int.Parse(aConfig.AppSettings["redis_port"]);
+            RedisPasswd = aConfig.AppSettings["redis_password"];
+            RedisCopyKey = aConfig.AppSettings["redis_copy_order_id_key"];
+            RedisCopyOrderTemplate = aConfig.AppSettings["redis_copy_orders_key"];
+            RedisCopyUserTemplate = aConfig.AppSettings["redis_copy_user_key"];
+            RedisCopyTargetTemplate = aConfig.AppSettings["redis_copy_target_key"];
+            RedisCopyRateTemplate = aConfig.AppSettings["redis_copy_rate_key"];
+        }
+        private static string RedisHost
+        { 
+            get; 
+            set; 
+        }
+
+        private static int RedisPort
+        {
+            get;
+            set;
+        }
+
+        private static string RedisPasswd
+        {
+            get;
+            set;
+        }
+
+        public static string RedisCopyOrderTemplate
+        {
+            get;
+            private set;
+        }
+
+        public static string RedisCopyUserTemplate
+        {
+            get;
+            private set;
+        }
+
+        public static string RedisCopyTargetTemplate
+        {
+            get;
+            private set;
+        }
+
+        public static string RedisCopyRateTemplate
+        {
+            get;
+            private set;
+        }
+
+        public static string RedisCopyKey
+        {
+            get;
+            private set;
+        }
+
         public CopyServer()
         {
             CreateTime = DateTime.MinValue;
@@ -53,8 +112,8 @@ namespace MT4Proxy.NET.Core
                                 }
                                 catch { }
                             }
-                            _connection = new RedisClient(Poll.RedisHost, Poll.RedisPort);
-                            _connection.Auth(Poll.RedisPasswd);
+                            _connection = new RedisClient(RedisHost, RedisPort);
+                            _connection.Auth(RedisPasswd);
                             CreateTime = DateTime.Now;
                         }
                         break;
@@ -139,7 +198,7 @@ namespace MT4Proxy.NET.Core
                     if (exists_order)
                         continue;
                     */
-                    key = string.Format(Poll.RedisCopyUserTemplate, mt4_from);
+                    key = string.Format(RedisCopyUserTemplate, mt4_from);
                     var items = connection.SMembers(key);
                     var trade_date = trade.timestamp.FromTime32();
                     foreach(var i in items)
@@ -148,12 +207,12 @@ namespace MT4Proxy.NET.Core
                         var mt4_to = int.Parse(values[0]);
                         var source = values[1];
                         var user_code = values[2];
-                        key = string.Format(Poll.RedisCopyRateTemplate, mt4_to, mt4_from);
+                        key = string.Format(RedisCopyRateTemplate, mt4_to, mt4_from);
                         var rate = int.Parse(connection.Get(key));
                         var now = DateTime.Now.AddHours(3);
                         //if (Math.Abs((now - trade_date).TotalSeconds) > 1)
                         //    break;
-                        var order_no = (int)connection.Incr(Poll.RedisCopyKey);
+                        var order_no = (int)connection.Incr(RedisCopyKey);
                         //开仓here
                         var volnum = (int)(rate * trade.volume * 0.01);
                         if (volnum < 0)
@@ -171,14 +230,14 @@ namespace MT4Proxy.NET.Core
                         var result = api.TradeTransaction(args);
                         if (result == RET_CODE.RET_OK)
                         {
-                            key = string.Format(Poll.RedisCopyOrderTemplate, trade.order);
+                            key = string.Format(RedisCopyOrderTemplate, trade.order);
                             connection.SAdd(key, order_no);
                         }
                     }
                 }
                 if(trade_type == TRANS_TYPE.TRANS_DELETE && !string.IsNullOrWhiteSpace(trade.symbol))
                 {
-                    key = string.Format(Poll.RedisCopyOrderTemplate, trade.order);
+                    key = string.Format(RedisCopyOrderTemplate, trade.order);
                     var items = connection.SMembers(key);
                     foreach(var i in items)
                     {

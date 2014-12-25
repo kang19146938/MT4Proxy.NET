@@ -32,12 +32,19 @@ namespace MT4Proxy.NET.Service
         private static string MT4Group
         { get; set; }
 
+        public static double InitEqutiy
+        {
+            get;
+            private set;
+        }
+
         internal override void LoadConfig(ConfigurationManager aConfig)
         {
             MT4Addr = aConfig.AppSettings["mt4demo_host"];
             MT4User = int.Parse(aConfig.AppSettings["mt4demo_user"]);
             MT4Pass = aConfig.AppSettings["mt4demo_passwd"];
             MT4Group = aConfig.AppSettings["mt4demo_group"];
+            InitEqutiy = double.Parse(aConfig.AppSettings["init_equity"]);
         }
         public void OnRequest(IInputOutput aServer, dynamic aJson)
         {
@@ -64,7 +71,7 @@ namespace MT4Proxy.NET.Service
                 var result = api.OpenAccount(args);
                 if(result == RET_CODE.RET_OK)
                 {
-                    if (!is_real && Poll.InitEqutiy > 0)
+                    if (!is_real && InitEqutiy > 0)
                     {
                         var money_args = new TradeTransInfoArgs
                         {

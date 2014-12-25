@@ -12,11 +12,29 @@ using System.Text.RegularExpressions;
 
 namespace MT4Proxy.NET.Core
 {
-    class MysqlServer
+    class MysqlServer: ConfigBase
     {
         public MysqlServer()
         {
             CreateTime = DateTime.MinValue;
+        }
+
+        internal override void LoadConfig(NLog.Internal.ConfigurationManager aConfig)
+        {
+            MysqlServer.ConnectString = aConfig.AppSettings["mysql_cs"];
+            MysqlServer.AccountConnectString = aConfig.AppSettings["mysql_account_cs"];
+            MysqlServer.AccountMT4FieldName = aConfig.AppSettings["account_field_name"];
+            MysqlServer.CFD_List = new Dictionary<string, double>();
+            MysqlServer.CFD_List["WTOil"] = 450000;
+            MysqlServer.CFD_List["USDX"] = 450000;
+            MysqlServer.CFD_List["DAX"] = 150000;
+            MysqlServer.CFD_List["FFI"] = 150000;
+            MysqlServer.CFD_List["NK"] = 20000;
+            MysqlServer.CFD_List["HSI"] = 30000;
+            MysqlServer.CFD_List["SFC"] = 100000;
+            MysqlServer.CFD_List["mDJ"] = 200000;
+            MysqlServer.CFD_List["mND"] = 400000;
+            MysqlServer.CFD_List["mSP"] = 200000;
         }
 
         private MySqlConnection _connection = null;

@@ -12,8 +12,23 @@ using System.Timers;
 
 namespace MT4Proxy.NET
 {
-    internal class PumpServer: IServer
+    internal class PumpServer: ConfigBase, IServer
     {
+        internal override void LoadConfig(NLog.Internal.ConfigurationManager aConfig)
+        {
+            PumperCount = int.Parse(aConfig.AppSettings["pump_count"]);
+            if (PumperCount < 1)
+            {
+                string errInfo = "接收MT4推送的线程数量不正确";
+                Logger logger = LogManager.GetLogger("common");
+                logger.Error(errInfo);
+                throw new Exception(errInfo);
+            }
+        }
+
+        private int PumperCount
+        { get; set; }
+
         public void Initialize()
         {
             ServerContainer.ForkServer(typeof(SaveServer));
@@ -88,7 +103,7 @@ namespace MT4Proxy.NET
                 _tradeThread = new System.Threading.Thread(SaveTradeProc);
                 _tradeThread.IsBackground = true;
                 _tradeThread.Start();
-                for (int i = 0; i < MT4API.PumperCount; i++)
+                for (int i = 0; i < PumperCount; i++)
                 {
                     var timer = new Timer(10000);
                     timer.Interval = 10000;

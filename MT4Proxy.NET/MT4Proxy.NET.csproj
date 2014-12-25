@@ -104,7 +104,6 @@
     <Compile Include="Core\MysqlSyncer.cs" />
     <Compile Include="Core\Poll.cs" />
     <Compile Include="Server\PumpServer.cs" />
-    <Compile Include="Server\RedisServer.cs" />
     <Compile Include="Attribute\MT4ServiceAttribute.cs" />
     <Compile Include="Core\Utils.cs" />
     <Compile Include="Server\SaveServer.cs" />

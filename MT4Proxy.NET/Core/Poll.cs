@@ -141,55 +141,25 @@ namespace MT4Proxy.NET.Core
             Console.WriteLine(string.Format("Config file path:{0}",
                 AppDomain.CurrentDomain.SetupInformation.ConfigurationFile));
             var config = new ConfigurationManager();
-            var mt4Host = config.AppSettings["mt4_host"];
-            var mt4User = int.Parse(config.AppSettings["mt4_user"]);
-            var mt4Passwd = config.AppSettings["mt4_passwd"];
-            var mt4Group = config.AppSettings["mt4_group"];
-            var pumpCount = int.Parse(config.AppSettings["pump_count"]);
-            var init_equity = double.Parse(config.AppSettings["init_equity"]);
-            MT4Host = mt4Host;
-            MT4AdminID = mt4User;
-            MT4Passwd = mt4Passwd;
-            MT4Group = mt4Group;
-
-            RedisHost = config.AppSettings["redis_host"];
-            RedisPort = int.Parse(config.AppSettings["redis_port"]);
-            RedisPasswd = config.AppSettings["redis_password"];
-
-            InitEqutiy = init_equity;
-            RedisCopyKey = config.AppSettings["redis_copy_order_id_key"];
-            RedisCopyOrderTemplate = config.AppSettings["redis_copy_orders_key"];
-            RedisCopyUserTemplate = config.AppSettings["redis_copy_user_key"];
-            RedisCopyTargetTemplate = config.AppSettings["redis_copy_target_key"];
-            RedisCopyRateTemplate = config.AppSettings["redis_copy_rate_key"];
-            MysqlServer.ConnectString = config.AppSettings["mysql_cs"];
-            MysqlServer.AccountConnectString = config.AppSettings["mysql_account_cs"];
-            MysqlServer.CFD_List = new Dictionary<string, double>();
-            MysqlServer.CFD_List["WTOil"] = 450000;
-            MysqlServer.CFD_List["USDX"] = 450000;
-            MysqlServer.CFD_List["DAX"] = 150000;
-            MysqlServer.CFD_List["FFI"] = 150000;
-            MysqlServer.CFD_List["NK"] = 20000;
-            MysqlServer.CFD_List["HSI"] = 30000;
-            MysqlServer.CFD_List["SFC"] = 100000;
-            MysqlServer.CFD_List["mDJ"] = 200000;
-            MysqlServer.CFD_List["mND"] = 400000;
-            MysqlServer.CFD_List["mSP"] = 200000;
-            MysqlServer.AccountMT4FieldName = config.AppSettings["account_field_name"];
-            MT4API.init(MT4Host, mt4User, mt4Passwd, pumpCount);
-            var configs = Assembly.GetExecutingAssembly().GetTypes()
-                .Where(i=> i.GetCustomAttributes(typeof(ConfigAttribute), true).Length > 0)
-                .Where(i => i.FullName != typeof(ConfigBase).FullName);
-            foreach(var i in configs)
-            {
-                var item = Activator.CreateInstance(i) as ConfigBase;
-                item.LoadConfig(config);
-            }
-            ServerContainer.ForkServer(typeof(ZmqServer));
-            ServerContainer.ForkServer(typeof(PumpServer));
+            MT4Host = config.AppSettings["mt4_host"];
+            MT4AdminID = int.Parse(config.AppSettings["mt4_user"]);
+            MT4Passwd = config.AppSettings["mt4_passwd"];
+            MT4Group = config.AppSettings["mt4_group"];
+            MT4API.init(MT4Host, MT4AdminID, MT4Passwd);
+            Assembly.GetExecutingAssembly().GetTypes()
+                .Where(i => i.GetCustomAttributes(typeof(ConfigAttribute), true).Length > 0)
+                .Where(i => i.FullName != typeof(ConfigBase).FullName)
+                .Select(i =>
+                {
+                    var item = Activator.CreateInstance(i) as ConfigBase;
+                    item.LoadConfig(config);
+                    return i;
+                });
             var thDog = new Thread(DogProc);
             thDog.IsBackground = true;
             thDog.Start();
+            ServerContainer.ForkServer(typeof(ZmqServer));
+            ServerContainer.ForkServer(typeof(PumpServer));
         }
 
         public static void uninit()
@@ -208,56 +178,5 @@ namespace MT4Proxy.NET.Core
 
         public static string MT4Group
         { get; private set; }
-
-        public static string RedisHost
-        { get; private set; }
-
-        public static int RedisPort
-        {
-            get;
-            private set;
-        }
-
-        public static string RedisPasswd
-        {
-            get;
-            private set;
-        }
-
-        public static double InitEqutiy
-        {
-            get;
-            private set;
-        }
-
-        public static string RedisCopyOrderTemplate
-        {
-            get;
-            private set;
-        }
-
-        public static string RedisCopyUserTemplate
-        {
-            get;
-            private set;
-        }
-
-        public static string RedisCopyTargetTemplate
-        {
-            get;
-            private set;
-        }
-
-        public static string RedisCopyRateTemplate
-        {
-            get;
-            private set;
-        }
-
-        public static string RedisCopyKey
-        {
-            get;
-            private set;
-        }
     }
 }
