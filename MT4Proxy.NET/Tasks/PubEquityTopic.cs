@@ -68,7 +68,7 @@ namespace MT4Proxy.NET.Tasks
 
         protected override void OnProc()
         {
-            while (MT4Pump.EnableRestart && CanRun)
+            while (CanRun)
             {
                 var api = Poll.Fetch(MT4ID);
                 double equity = 0;

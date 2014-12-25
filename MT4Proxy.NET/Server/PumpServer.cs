@@ -35,8 +35,8 @@ namespace MT4Proxy.NET
         public void Initialize()
         {
             EnableRunning = true;
-            ServerContainer.ForkServer(typeof(SaveServer));
-            ServerContainer.ForkServer(typeof(CopyServer));
+            ServerContainer.ForkServer<SaveServer>();
+            ServerContainer.ForkServer<CopyServer>();
         }
 
         public void Stop()

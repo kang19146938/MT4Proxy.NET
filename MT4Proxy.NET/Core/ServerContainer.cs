@@ -10,15 +10,12 @@ namespace MT4Proxy.NET.Core
     internal static class ServerContainer
     {
         private static List<IServer> _collection = new List<IServer>();
-        public static void ForkServer(Type aServer)
+
+        public static void ForkServer<T>() where T : IServer, new()
         {
-            var flag = aServer.GetInterface(typeof(IServer).Name);
-            if(flag != null)
-            {
-                var item = Activator.CreateInstance(aServer) as IServer;
-                _collection.Add(item);
-                item.Initialize();
-            }
+            var item = new T() as IServer;
+            _collection.Add(item);
+            item.Initialize();
         }
 
         public static void StopAll()
@@ -35,8 +32,9 @@ namespace MT4Proxy.NET.Core
                 if (fine)
                     finish_count++;
                 else
-                    return;
+                    break;
             }
+            MT4API.uninit();
         }
 
         public static void StopFinish()

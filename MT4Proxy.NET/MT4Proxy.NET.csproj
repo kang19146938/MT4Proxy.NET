@@ -100,7 +100,6 @@
     <Compile Include="Core\ConfigBase.cs" />
     <Compile Include="Core\TaskBase.cs" />
     <Compile Include="Core\MT4API.cs" />
-    <Compile Include="Core\MT4Pump.cs" />
     <Compile Include="Core\MysqlSyncer.cs" />
     <Compile Include="Core\Poll.cs" />
     <Compile Include="Server\PumpServer.cs" />
@@ -118,7 +117,6 @@
     <Compile Include="Tasks\PubEquityTopic.cs" />
     <Compile Include="Service\ServerTime.cs" />
     <Compile Include="Service\Trade.cs" />
-    <Compile Include="Tasks\Equity.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

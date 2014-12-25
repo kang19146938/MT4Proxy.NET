@@ -19,7 +19,6 @@ namespace MT4Proxy.NET
                 Console.Read();
             }
             ServerContainer.StopAll();
-            Poll.uninit();
         }
 
         public static void Start(string[] args)
@@ -66,7 +65,7 @@ namespace MT4Proxy.NET
                     return false;
                 }
                 logger.Info("准备启动Zmq监听服务");
-                ServerContainer.ForkServer(typeof(ZmqServer));
+                ServerContainer.ForkServer<ZmqServer>();
                 logger.Info("初始工作已完成");
                 return true;
             }
@@ -90,7 +89,6 @@ namespace MT4Proxy.NET
             Logger logger = LogManager.GetLogger("common");
             logger.Info("收到windows服务停止信号");
             ServerContainer.StopAll();
-            MT4API.uninit();
         }
     }
 }
