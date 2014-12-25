@@ -1,7 +1,7 @@
 MT4Proxy.NET
 ============
 
-运行在dotNET CLR环境的MT4托管代理服务，兼容redis和zmq。
+运行在dotNET CLR环境的MT4托管代理服务，使用ZMQ和Redis。
 项目.NET默认运行环境版本是4.5，最低编译环境版本不应低于4.0。
 
 安装
@@ -49,4 +49,4 @@ MT4Proxy.NET
         }
     }
     
-`MT4Service`特性可以设置是否使用ZMQ或者Redis进行处理，强制设置ZMQ API标识或者Redis监视的列表等等。`IServer`接口提供了返回内容和Redis Push位置。
+`MT4Service`特性可以设置service运行细节。`IServer`接口提供了返回内容和结果保存位置。
