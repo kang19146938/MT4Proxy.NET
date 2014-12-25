@@ -13,6 +13,9 @@ using MT4Proxy.NET.EventArg;
 
 namespace MT4Proxy.NET.Core
 {
+    /// <summary>
+    /// C++\CLI MT4类的高层包装，用于适配Poll系统。
+    /// </summary>
     internal class MT4API : MT4Wrapper
     {
         public static void init(string aServerAddr, int aUser, string aPasswd)

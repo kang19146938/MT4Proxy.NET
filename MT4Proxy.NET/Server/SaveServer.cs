@@ -49,7 +49,7 @@ namespace MT4Proxy.NET
                 _tradeThread = new System.Threading.Thread(
                     () => 
                     {
-                        while(Utils.SignalWait(ref EnableRunning, _tradeSignal))
+                        while(Utils.SignalWait(_tradeSignal))
                         {
                             TradeInfoEventArgs item = null;
                             _queTrades.TryDequeue(out item);
@@ -92,8 +92,11 @@ namespace MT4Proxy.NET
 
         void WhenNewTrade(object sender, TradeInfoEventArgs e)
         {
-            _queTrades.Enqueue(e);
-            _tradeSignal.Release();
+            if (EnableRunning)
+            {
+                _queTrades.Enqueue(e);
+                _tradeSignal.Release();
+            }
         }
 
         void WhenNewQuote(object sender, QuoteInfoEventArgs e)

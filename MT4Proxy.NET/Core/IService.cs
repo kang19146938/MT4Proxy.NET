@@ -8,6 +8,9 @@ using NLog.Internal;
 
 namespace MT4Proxy.NET.Core
 {
+    /// <summary>
+    /// ZMQ服务基础接口
+    /// </summary>
     public interface IService
     {
         void OnRequest(IInputOutput aServer, dynamic aArgs);

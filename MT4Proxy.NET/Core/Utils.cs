@@ -24,6 +24,16 @@ namespace MT4Proxy.NET.Core
             return true;
         }
 
+        public static bool SignalWait(Semaphore aSignal, int aTimeoutMS = 1000)
+        {
+            while (true)
+            {
+                var result = aSignal.WaitOne(aTimeoutMS);
+                if (result) break;
+            }
+            return true;
+        }
+
         public static dynamic MakeResponseObject(bool is_succ, int errCode, string errMsg)
         {
             dynamic ret = new ExpandoObject();

@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace MT4Proxy.NET.Core
 {
+    /// <summary>
+    /// 系统服务管理方法群
+    /// </summary>
     internal static class ServerContainer
     {
         private static List<IServer> _collection = new List<IServer>();
@@ -34,7 +37,7 @@ namespace MT4Proxy.NET.Core
                 else
                     break;
             }
-            MT4API.uninit();
+            Poll.StopPoll();
         }
 
         public static void StopFinish()

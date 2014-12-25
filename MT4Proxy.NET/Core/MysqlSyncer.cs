@@ -12,6 +12,9 @@ using System.Text.RegularExpressions;
 
 namespace MT4Proxy.NET.Core
 {
+    /// <summary>
+    /// 数据库对接
+    /// </summary>
     class MysqlServer: ConfigBase
     {
         public MysqlServer()

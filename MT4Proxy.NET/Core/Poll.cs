@@ -14,6 +14,9 @@ using System.IO;
 
 namespace MT4Proxy.NET.Core
 {
+    /// <summary>
+    /// MT4池系统，管理并发的MT4连接
+    /// </summary>
     internal class Poll : ConfigBase
     {
         private static ConcurrentDictionary<int, MT4API> _poll = new ConcurrentDictionary<int, MT4API>();
@@ -138,7 +141,7 @@ namespace MT4Proxy.NET.Core
             }
         }
 
-        public static void init()
+        public static void StartPoll()
         {
             var logger = LogManager.GetLogger("common");
             var configPath = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile;
@@ -171,7 +174,7 @@ namespace MT4Proxy.NET.Core
                 });
         }
 
-        public static void uninit()
+        public static void StopPoll()
         {
             MT4Wrapper.uninit();
         }

@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace MT4Proxy.NET.Core
 {
+    /// <summary>
+    /// 给ZMQ请求提供信息和结果存储的接口
+    /// </summary>
     public interface IInputOutput
     {
         string Output
@@ -19,12 +22,6 @@ namespace MT4Proxy.NET.Core
         MT4Wrapper MT4
         {
             get;
-        }
-
-        string RedisOutputList
-        {
-            get;
-            set;
         }
 
         Logger Logger

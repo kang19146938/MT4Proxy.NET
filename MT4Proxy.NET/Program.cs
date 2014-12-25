@@ -18,6 +18,7 @@ namespace MT4Proxy.NET
                 logger.Info("启动完成，按任意键退出");
                 Console.Read();
             }
+            logger.Info("终止系统");
             ServerContainer.StopAll();
         }
 
@@ -55,7 +56,7 @@ namespace MT4Proxy.NET
                 else
                     logger.Info("启动环境是32位");
                 logger.Info("准备启动MT4池");
-                Poll.init();
+                Poll.StartPoll();
                 if (sync)
                 {
                     var syncer = new MysqlServer();

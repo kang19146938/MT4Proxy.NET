@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace MT4Proxy.NET.Core
 {
+    /// <summary>
+    /// 推送ZMQ任务协程基础实现
+    /// </summary>
     abstract class TaskBase
     {
         protected volatile bool CanRun = true;
