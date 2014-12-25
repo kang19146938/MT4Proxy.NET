@@ -90,17 +90,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Attribute\ConfigAttribute.cs" />
     <Compile Include="Core\IServer.cs" />
+    <Compile Include="Core\ServerContainer.cs" />
+    <Compile Include="EventArg\QuoteInfoEventArgs.cs" />
+    <Compile Include="Server\CopyServer.cs" />
+    <Compile Include="Core\IInputOutput.cs" />
     <Compile Include="Core\IService.cs" />
+    <Compile Include="Core\ConfigBase.cs" />
     <Compile Include="Core\TaskBase.cs" />
     <Compile Include="Core\MT4API.cs" />
     <Compile Include="Core\MT4Pump.cs" />
     <Compile Include="Core\MysqlSyncer.cs" />
     <Compile Include="Core\Poll.cs" />
-    <Compile Include="Core\RedisServer.cs" />
-    <Compile Include="Core\MT4ServiceAttribute.cs" />
+    <Compile Include="Server\PumpServer.cs" />
+    <Compile Include="Server\RedisServer.cs" />
+    <Compile Include="Attribute\MT4ServiceAttribute.cs" />
     <Compile Include="Core\Utils.cs" />
-    <Compile Include="Core\ZmqServer.cs" />
+    <Compile Include="Server\SaveServer.cs" />
+    <Compile Include="Server\ZmqServer.cs" />
+    <Compile Include="EventArg\TradeInfoEventArgs.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Service\ChangePassword.cs" />

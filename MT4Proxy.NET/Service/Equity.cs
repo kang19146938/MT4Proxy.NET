@@ -7,9 +7,9 @@ using System.Dynamic;
 namespace MT4Proxy.NET.Service
 {
     [MT4Service(EnableZMQ = true)]
-    class Equity:IService
+    class Equity : IService
     {
-        public void OnRequest(IServer aServer, dynamic aJson)
+        public void OnRequest(IInputOutput aServer, dynamic aJson)
         {
             var login = Convert.ToInt32(aJson["mt4UserID"]);
             double equity = 0;

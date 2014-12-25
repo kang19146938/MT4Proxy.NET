@@ -4,13 +4,42 @@ using MT4Proxy.NET.Core;
 using System.Dynamic;
 using MT4CliWrapper;
 using NLog;
+using NLog.Internal;
 
 namespace MT4Proxy.NET.Service
 {
     [MT4Service(EnableZMQ = true)]
-    class OpenAccount:IService
+    class OpenAccount : ConfigBase, IService
     {
-        public void OnRequest(IServer aServer, dynamic aJson)
+        private static string MT4Addr
+        {
+            get;
+            set;
+        }
+
+        private static int MT4User
+        {
+            get;
+            set;
+        }
+
+        private static string MT4Pass
+        {
+            get;
+            set;
+        }
+
+        private static string MT4Group
+        { get; set; }
+
+        internal override void LoadConfig(ConfigurationManager aConfig)
+        {
+            MT4Addr = aConfig.AppSettings["mt4demo_host"];
+            MT4User = int.Parse(aConfig.AppSettings["mt4demo_user"]);
+            MT4Pass = aConfig.AppSettings["mt4demo_passwd"];
+            MT4Group = aConfig.AppSettings["mt4demo_group"];
+        }
+        public void OnRequest(IInputOutput aServer, dynamic aJson)
         {
             try
             {
@@ -28,8 +57,8 @@ namespace MT4Proxy.NET.Service
                 };
                 if(!is_real)
                 {
-                    args.group = Poll.MT4DemoGroup;
-                    api = new MT4API(Poll.MT4DemoHost, Poll.MT4DemoAdminID, Poll.MT4DemoPasswd);
+                    args.group = MT4Group;
+                    api = new MT4API(MT4Addr, MT4User, MT4Pass);
                 }
 
                 var result = api.OpenAccount(args);

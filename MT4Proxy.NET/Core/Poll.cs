@@ -9,6 +9,7 @@ using System.Threading;
 using System.Diagnostics;
 using NLog;
 using NLog.Internal;
+using System.Reflection;
 
 namespace MT4Proxy.NET.Core
 {
@@ -53,11 +54,19 @@ namespace MT4Proxy.NET.Core
             }
         }
 
+        /// <summary>
+        /// 回收new产生的对象
+        /// </summary>
+        /// <param name="aWrapper"></param>
         public static void Release(MT4Wrapper aWrapper)
         {
             _idel.Enqueue(aWrapper as MT4API);
         }
 
+        /// <summary>
+        /// 回收Fetch产生的对象
+        /// </summary>
+        /// <param name="aWrapper"></param>
         public static void Bringback(MT4Wrapper aWrapper)
         {
             var dtwrapper = (MT4API)aWrapper;
@@ -129,35 +138,30 @@ namespace MT4Proxy.NET.Core
             Logger logger = LogManager.GetLogger("common");
             logger.Info(string.Format("配置文件位置:{0}",
                 AppDomain.CurrentDomain.SetupInformation.ConfigurationFile));
-            Console.WriteLine(string.Format("配置文件位置:{0}",
+            Console.WriteLine(string.Format("Config file path:{0}",
                 AppDomain.CurrentDomain.SetupInformation.ConfigurationFile));
             var config = new ConfigurationManager();
             var mt4Host = config.AppSettings["mt4_host"];
-            var mt4Port = int.Parse(config.AppSettings["mt4_port"]);
             var mt4User = int.Parse(config.AppSettings["mt4_user"]);
             var mt4Passwd = config.AppSettings["mt4_passwd"];
             var mt4Group = config.AppSettings["mt4_group"];
-            var mt4demoHost = config.AppSettings["mt4demo_host"];
-            var mt4demoPort = int.Parse(config.AppSettings["mt4demo_port"]);
-            var mt4demoUser = int.Parse(config.AppSettings["mt4demo_user"]);
-            var mt4demoPaawd = config.AppSettings["mt4demo_passwd"];
-            var mt4demoGroup = config.AppSettings["mt4demo_group"];
-
             var pumpCount = int.Parse(config.AppSettings["pump_count"]);
-
             var init_equity = double.Parse(config.AppSettings["init_equity"]);
-            MT4Host = string.Format("{0}:{1}", mt4Host, mt4Port);
+            MT4Host = mt4Host;
             MT4AdminID = mt4User;
             MT4Passwd = mt4Passwd;
             MT4Group = mt4Group;
 
-            MT4DemoHost = string.Format("{0}:{1}", mt4demoHost, mt4demoPort);
-            MT4DemoAdminID = mt4demoUser;
-            MT4DemoPasswd = mt4demoPaawd;
-            MT4DemoGroup = mt4demoGroup;
+            RedisHost = config.AppSettings["redis_host"];
+            RedisPort = int.Parse(config.AppSettings["redis_port"]);
+            RedisPasswd = config.AppSettings["redis_password"];
 
             InitEqutiy = init_equity;
-
+            RedisCopyKey = config.AppSettings["redis_copy_order_id_key"];
+            RedisCopyOrderTemplate = config.AppSettings["redis_copy_orders_key"];
+            RedisCopyUserTemplate = config.AppSettings["redis_copy_user_key"];
+            RedisCopyTargetTemplate = config.AppSettings["redis_copy_target_key"];
+            RedisCopyRateTemplate = config.AppSettings["redis_copy_rate_key"];
             MysqlServer.ConnectString = config.AppSettings["mysql_cs"];
             MysqlServer.AccountConnectString = config.AppSettings["mysql_account_cs"];
             MysqlServer.CFD_List = new Dictionary<string, double>();
@@ -172,9 +176,17 @@ namespace MT4Proxy.NET.Core
             MysqlServer.CFD_List["mND"] = 400000;
             MysqlServer.CFD_List["mSP"] = 200000;
             MysqlServer.AccountMT4FieldName = config.AppSettings["account_field_name"];
-
-            MT4API.init(string.Format("{0}:{1}", mt4Host, mt4Port), mt4User, mt4Passwd, pumpCount);
-            MT4Pump.StartPump();
+            MT4API.init(MT4Host, mt4User, mt4Passwd, pumpCount);
+            var configs = Assembly.GetExecutingAssembly().GetTypes()
+                .Where(i=> i.GetCustomAttributes(typeof(ConfigAttribute), true).Length > 0)
+                .Where(i => i.FullName != typeof(ConfigBase).FullName);
+            foreach(var i in configs)
+            {
+                var item = Activator.CreateInstance(i) as ConfigBase;
+                item.LoadConfig(config);
+            }
+            ServerContainer.ForkServer(typeof(ZmqServer));
+            ServerContainer.ForkServer(typeof(PumpServer));
             var thDog = new Thread(DogProc);
             thDog.IsBackground = true;
             thDog.Start();
@@ -197,19 +209,52 @@ namespace MT4Proxy.NET.Core
         public static string MT4Group
         { get; private set; }
 
-        public static string MT4DemoHost
+        public static string RedisHost
         { get; private set; }
 
-        public static int MT4DemoAdminID
-        { get; private set; }
+        public static int RedisPort
+        {
+            get;
+            private set;
+        }
 
-        public static string MT4DemoPasswd
-        { get; private set; }
-
-        public static string MT4DemoGroup
-        { get; private set; }
+        public static string RedisPasswd
+        {
+            get;
+            private set;
+        }
 
         public static double InitEqutiy
+        {
+            get;
+            private set;
+        }
+
+        public static string RedisCopyOrderTemplate
+        {
+            get;
+            private set;
+        }
+
+        public static string RedisCopyUserTemplate
+        {
+            get;
+            private set;
+        }
+
+        public static string RedisCopyTargetTemplate
+        {
+            get;
+            private set;
+        }
+
+        public static string RedisCopyRateTemplate
+        {
+            get;
+            private set;
+        }
+
+        public static string RedisCopyKey
         {
             get;
             private set;
