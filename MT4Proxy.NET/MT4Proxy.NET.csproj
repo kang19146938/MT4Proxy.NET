@@ -106,6 +106,7 @@
     <Compile Include="Attribute\MT4ServiceAttribute.cs" />
     <Compile Include="Core\Utils.cs" />
     <Compile Include="Server\SaveServer.cs" />
+    <Compile Include="Server\TimeServer.cs" />
     <Compile Include="Server\ZmqServer.cs" />
     <Compile Include="EventArg\TradeInfoEventArgs.cs" />
     <Compile Include="Program.cs" />

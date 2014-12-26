@@ -19,7 +19,7 @@ namespace MT4Proxy.NET
                 Console.Read();
             }
             logger.Info("终止系统");
-            ServerContainer.StopAll();
+            Poll.StopPoll();
         }
 
         public static void Start(string[] args)
@@ -62,7 +62,7 @@ namespace MT4Proxy.NET
                     var syncer = new MysqlServer();
                     syncer.SyncEquity();
                     syncer.SyncMaster();
-                    ServerContainer.StopAll();
+                    Poll.StopPoll();
                     return false;
                 }
                 logger.Info("准备启动Zmq监听服务");
@@ -89,7 +89,7 @@ namespace MT4Proxy.NET
         {
             var logger = LogManager.GetLogger("common");
             logger.Info("收到windows服务停止信号");
-            ServerContainer.StopAll();
+            Poll.StopPoll();
         }
     }
 }

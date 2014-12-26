@@ -27,12 +27,15 @@ namespace MT4Proxy.NET.Core
         public void Stop()
         {
             EnableRunning = false;
-            ServerContainer.StopFinish();
+            ServerContainer.FinishStop();
         }
 
         private static bool EnableRunning = false;
         private Context _zmqCtx = null;
-        private ConcurrentDictionary<string, Type> _apiDict = new ConcurrentDictionary<string, Type>();
+        private ConcurrentDictionary<string, Type> _apiDict = 
+            new ConcurrentDictionary<string, Type>();
+        private ConcurrentDictionary<string, MT4ServiceAttribute> _attrDict =
+            new ConcurrentDictionary<string, MT4ServiceAttribute>();
         private static IZmqSocket _publisher = null;
         private static Semaphore _pubSignal = new Semaphore(0, 20000);
         private static ConcurrentQueue<Tuple<string, string>>
@@ -45,8 +48,9 @@ namespace MT4Proxy.NET.Core
 
         }
 
-        public ZmqServer(int aMT4ID)
+        public ZmqServer(int aMT4ID, bool aEnableMT4Object = true)
         {
+            if (!aEnableMT4Object) return;
             if (aMT4ID > 0)
                 MT4 = Poll.Fetch(aMT4ID);
             else
@@ -100,16 +104,14 @@ namespace MT4Proxy.NET.Core
                 var service = i;
                 if (attr.EnableZMQ)
                 {
+                    var serviceName = string.Empty;
                     if (!string.IsNullOrWhiteSpace(attr.ZmqApiName))
-                    {
-                        initlogger.Info(string.Format("准备初始化ZMQ服务:{0}", attr.ZmqApiName));
-                        _apiDict[attr.ZmqApiName] = i;
-                    }
+                        serviceName = attr.ZmqApiName;
                     else
-                    {
-                        initlogger.Info(string.Format("准备初始化ZMQ服务:{0}", service.Name));
-                        _apiDict[service.Name] = i;
-                    }
+                        serviceName = service.Name;
+                    initlogger.Info(string.Format("准备初始化ZMQ服务:{0}", serviceName));
+                    _apiDict[serviceName] = i;
+                    _attrDict[serviceName] = attr;
                 }
             }
             var repSocket = _zmqCtx.CreateSocket(SocketType.Rep);
@@ -137,7 +139,7 @@ namespace MT4Proxy.NET.Core
                     {
                         var service = _apiDict[api_name];
                         var serviceobj = Activator.CreateInstance(service) as IService;
-                        using (var server = new ZmqServer(mt4_id))
+                        using (var server = new ZmqServer(mt4_id, !_attrDict[api_name].DisableMT4))
                         {
                             server.Logger = LogManager.GetLogger("common");
                             server.Logger.Info(string.Format("ZMQ,recv request:{0}", item));
@@ -217,10 +219,11 @@ namespace MT4Proxy.NET.Core
 
             if (disposing)
             {
-                if (_mt4ID > 0)
-                    Poll.Bringback(MT4);
-                else
-                    Poll.Release(MT4);
+                if (MT4 != null)
+                    if (_mt4ID > 0)
+                        Poll.Bringback(MT4);
+                    else
+                        Poll.Release(MT4);
                 MT4 = null;
                 Logger = null;
             }

@@ -308,23 +308,17 @@ RET_CODE MT4Wrapper::ChangePassword(const int login, String^ password)
 	return (RET_CODE)nRet;
 }
 
-RET_CODE MT4Wrapper::GetEquity(int login, Double% equity)
+RET_CODE MT4Wrapper::GetEquity(int login, Double% equity, Double% free, Double% balance)
 {
 	MarginLevel marginLevel;
 	memset(&marginLevel, 0, sizeof(MarginLevel));
 	int nRet = m_pManagerDirect->MarginLevelRequest(login, &marginLevel);
 	if (nRet == RET_OK)
+	{
 		equity = marginLevel.equity;
-	return (RET_CODE)nRet;
-}
-
-RET_CODE MT4Wrapper::GetMarginFree(int login, Double% margin)
-{
-	MarginLevel marginLevel;
-	memset(&marginLevel, 0, sizeof(MarginLevel));
-	int nRet = m_pManagerDirect->MarginLevelRequest(login, &marginLevel);
-	if (nRet == RET_OK)
-		margin = marginLevel.margin_free;
+		free = marginLevel.margin_free;
+		balance = marginLevel.balance;
+	}
 	return (RET_CODE)nRet;
 }
 

@@ -21,6 +21,9 @@ namespace MT4Proxy.NET.Core
     {
         internal override void LoadConfig(NLog.Internal.ConfigurationManager aConfig)
         {
+            Enable = bool.Parse(aConfig.AppSettings["enable_copy"]);
+            if (!Enable)
+                return;
             RedisHost = aConfig.AppSettings["redis_host"];
             RedisPort = int.Parse(aConfig.AppSettings["redis_port"]);
             RedisPasswd = aConfig.AppSettings["redis_password"];
@@ -29,6 +32,11 @@ namespace MT4Proxy.NET.Core
             RedisCopyUserTemplate = aConfig.AppSettings["redis_copy_user_key"];
             RedisCopyTargetTemplate = aConfig.AppSettings["redis_copy_target_key"];
             RedisCopyRateTemplate = aConfig.AppSettings["redis_copy_rate_key"];
+        }
+        private static bool Enable
+        {
+            get;
+            set;
         }
         private static string RedisHost
         { 
@@ -87,6 +95,12 @@ namespace MT4Proxy.NET.Core
 
         public void Initialize()
         {
+            var logger = LogManager.GetLogger("common");
+            if(!Enable)
+            {
+                logger.Info("复制服务被禁用");
+                return;
+            }
             EnableRunning = true;
             if (_thProc == null)
             {
@@ -94,6 +108,7 @@ namespace MT4Proxy.NET.Core
                 _thProc.IsBackground = true;
                 _thProc.Start();
             }
+            logger.Info("复制服务已经启动");
         }
         private RedisClient Connection
         {
@@ -165,6 +180,8 @@ namespace MT4Proxy.NET.Core
         public void Stop()
         {
             EnableRunning = false;
+            if (!Enable)
+                ServerContainer.FinishStop();
         }
 
         public void PushTrade(TRANS_TYPE aType, TradeRecordResult aTrade)
@@ -257,7 +274,7 @@ namespace MT4Proxy.NET.Core
                 }
                 Poll.Release(api);
             }
-            ServerContainer.StopFinish();
+            ServerContainer.FinishStop();
         }
 
         private bool IsCopyTrade(int aOrder)

@@ -34,6 +34,8 @@ namespace MT4Proxy.NET
 
         public void Initialize()
         {
+            var logger = LogManager.GetLogger("common");
+            logger.Info("MT4订阅服务已经启动");
             EnableRunning = true;
             ServerContainer.ForkServer<SaveServer>();
             ServerContainer.ForkServer<CopyServer>();
@@ -44,7 +46,7 @@ namespace MT4Proxy.NET
             EnableRunning = false;
             foreach(var i in _lstRunning)
                 i.FreeMT4(i);
-            ServerContainer.StopFinish();
+            ServerContainer.FinishStop();
         }
 
         public PumpServer()

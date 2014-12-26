@@ -1,6 +1,7 @@
 ﻿using MT4CliWrapper;
 using MT4Proxy.NET.Core;
 using MT4Proxy.NET.EventArg;
+using NLog;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -49,17 +50,21 @@ namespace MT4Proxy.NET
                 _tradeThread = new System.Threading.Thread(
                     () => 
                     {
-                        while(Utils.SignalWait(_tradeSignal))
+                        while(Utils.SignalWait(ref EnableRunning, _tradeSignal))
                         {
                             TradeInfoEventArgs item = null;
                             _queTrades.TryDequeue(out item);
                             TradesSyncer.PushTrade(item.TradeType, item.Trade);
                         }
-                        ServerContainer.StopFinish();
+                        foreach (var item in _queTrades.ToArray())
+                            TradesSyncer.PushTrade(item.TradeType, item.Trade);
+                        ServerContainer.FinishStop();
                     });
                 _tradeThread.IsBackground = true;
                 _tradeThread.Start();
             }
+            var logger = LogManager.GetLogger("common");
+            logger.Info("订单与报价同步服务已经启动");
         }
 
         public void Stop()

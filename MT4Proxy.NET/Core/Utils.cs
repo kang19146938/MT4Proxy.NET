@@ -54,10 +54,10 @@ namespace MT4Proxy.NET.Core
             }
         }
 
-        private static DateTime origin = new DateTime(1970, 1, 1);
+        private static readonly DateTime origin = new DateTime(1970, 1, 1);
         public static int ToTime32(this DateTime aDatetime)
         {
-            return (int)(aDatetime - new DateTime(1970, 1, 1)).TotalSeconds;
+            return (int)(aDatetime - origin).TotalSeconds;
         }
 
         public static DateTime FromTime32(this int aTime32)

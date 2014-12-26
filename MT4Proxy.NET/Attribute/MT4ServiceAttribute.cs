@@ -8,24 +8,11 @@ namespace MT4Proxy.NET.Core
 {
     public class MT4ServiceAttribute : Attribute
     {
-        public string RedisKey
+        public bool DisableMT4
         {
             get;
             set;
         }
-
-        public string RedisOutputList
-        {
-            get;
-            set;
-        }
-
-        public bool EnableRedis
-        {
-            get;
-            set;
-        }
-
         public bool EnableZMQ
         {
             get;

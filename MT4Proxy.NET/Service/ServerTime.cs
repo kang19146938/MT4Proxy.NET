@@ -9,15 +9,14 @@ using System.Threading.Tasks;
 
 namespace MT4Proxy.NET.Service
 {
-    [MT4Service(EnableZMQ = true)]
+    [MT4Service(EnableZMQ = true, DisableMT4 = true)]
     class ServerTime : IService
     {
         public void OnRequest(IInputOutput aServer, dynamic aJson)
         {
-            var time = aServer.MT4.ServerTime();
             dynamic resp = new ExpandoObject();
             resp.is_succ = true;
-            resp.now = time;
+            resp.now = TimeServer.Now.ToTime32();
             resp.err_msg = "";
             aServer.Output = JsonConvert.SerializeObject(resp);
         }

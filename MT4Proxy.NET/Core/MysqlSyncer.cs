@@ -490,9 +490,11 @@ namespace MT4Proxy.NET.Core
             {
                 var dict = new Dictionary<int, double>();
                 double result = 0;
+                double free = 0;
+                double balance = 0;
                 foreach (var id in users)
                 {
-                    var status = mt4.GetEquity(id, ref result);
+                    var status = mt4.GetEquity(id, ref result, ref free, ref balance);
                     if (status != RET_CODE.RET_OK)
                     {
                         logger.Error(string.Format(

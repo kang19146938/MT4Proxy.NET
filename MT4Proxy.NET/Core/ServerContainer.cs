@@ -37,10 +37,9 @@ namespace MT4Proxy.NET.Core
                 else
                     break;
             }
-            Poll.StopPoll();
         }
 
-        public static void StopFinish()
+        public static void FinishStop()
         {
             _stopSignal.Release();
         }

@@ -72,7 +72,9 @@ namespace MT4Proxy.NET.Tasks
             {
                 var api = Poll.Fetch(MT4ID);
                 double equity = 0;
-                var result = api.GetEquity(MT4ID, ref equity);
+                double free = 0;
+                double balance = 0;
+                var result = api.GetEquity(MT4ID, ref equity, ref free, ref balance);
                 Poll.Bringback(api);
                 equity = Math.Round(equity, 2);
                 dynamic resp = new ExpandoObject();
