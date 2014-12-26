@@ -157,8 +157,6 @@ namespace MT4Proxy.NET.Core
             var thDog = new Thread(DogProc);
             thDog.IsBackground = true;
             thDog.Start();
-            ServerContainer.ForkServer<TimeServer>();
-            ServerContainer.ForkServer<PumpServer>();
         }
 
         private static void ConfigObject()

@@ -91,6 +91,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attribute\ConfigAttribute.cs" />
+    <Compile Include="Server\DockServer.cs" />
+    <Compile Include="Core\DockItem.cs" />
     <Compile Include="Core\IServer.cs" />
     <Compile Include="Core\ServerContainer.cs" />
     <Compile Include="EventArg\QuoteInfoEventArgs.cs" />
@@ -100,12 +102,12 @@
     <Compile Include="Core\ConfigBase.cs" />
     <Compile Include="Core\TaskBase.cs" />
     <Compile Include="Core\MT4API.cs" />
-    <Compile Include="Core\MysqlSyncer.cs" />
     <Compile Include="Core\Poll.cs" />
     <Compile Include="Server\PumpServer.cs" />
     <Compile Include="Attribute\MT4ServiceAttribute.cs" />
     <Compile Include="Core\Utils.cs" />
     <Compile Include="Server\SaveServer.cs" />
+    <Compile Include="Server\SyncServer.cs" />
     <Compile Include="Server\TimeServer.cs" />
     <Compile Include="Server\ZmqServer.cs" />
     <Compile Include="EventArg\TradeInfoEventArgs.cs" />

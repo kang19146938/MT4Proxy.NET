@@ -57,14 +57,18 @@ namespace MT4Proxy.NET
                     logger.Info("启动环境是32位");
                 logger.Info("准备启动MT4池");
                 Poll.StartPoll();
+                ServerContainer.ForkServer<DockServer>();
                 if (sync)
                 {
-                    var syncer = new MysqlServer();
+                    ServerContainer.ForkServer<SyncServer>();
+                    var syncer = new SyncServer();
                     syncer.SyncEquity();
                     syncer.SyncMaster();
                     Poll.StopPoll();
                     return false;
                 }
+                ServerContainer.ForkServer<TimeServer>();
+                ServerContainer.ForkServer<PumpServer>();
                 logger.Info("准备启动Zmq监听服务");
                 ServerContainer.ForkServer<ZmqServer>();
                 logger.Info("初始工作已完成");

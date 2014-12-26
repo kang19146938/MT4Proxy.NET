@@ -24,7 +24,10 @@ void MT4Wrapper::init(String^ serverAddr, int user, String^ passwd,
 
 void MT4Wrapper::uninit()
 {
-	m_hPumpHandle.Free();
+	if (m_hPumpHandle.IsAllocated)
+	{
+		m_hPumpHandle.Free();
+	}
 	m_pPumpCallback = nullptr;
 	if (m_ManagerFactory)
 	{

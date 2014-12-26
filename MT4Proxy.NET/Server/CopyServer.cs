@@ -10,6 +10,7 @@ using MT4CliWrapper;
 using System.Threading;
 using CSRedis;
 using NLog;
+using MT4Proxy.NET.EventArg;
 
 
 namespace MT4Proxy.NET.Core
@@ -24,33 +25,13 @@ namespace MT4Proxy.NET.Core
             Enable = bool.Parse(aConfig.AppSettings["enable_copy"]);
             if (!Enable)
                 return;
-            RedisHost = aConfig.AppSettings["redis_host"];
-            RedisPort = int.Parse(aConfig.AppSettings["redis_port"]);
-            RedisPasswd = aConfig.AppSettings["redis_password"];
             RedisCopyKey = aConfig.AppSettings["redis_copy_order_id_key"];
-            RedisCopyOrderTemplate = aConfig.AppSettings["redis_copy_orders_key"];
-            RedisCopyUserTemplate = aConfig.AppSettings["redis_copy_user_key"];
-            RedisCopyTargetTemplate = aConfig.AppSettings["redis_copy_target_key"];
-            RedisCopyRateTemplate = aConfig.AppSettings["redis_copy_rate_key"];
+            RedisCopyOrderTemplate = aConfig.AppSettings["redis_copy_orders_template"];
+            RedisCopyUserTemplate = aConfig.AppSettings["redis_copy_user_template"];
+            RedisCopyTargetTemplate = aConfig.AppSettings["redis_copy_target_template"];
+            RedisCopyRateTemplate = aConfig.AppSettings["redis_copy_rate_template"];
         }
         private static bool Enable
-        {
-            get;
-            set;
-        }
-        private static string RedisHost
-        { 
-            get; 
-            set; 
-        }
-
-        private static int RedisPort
-        {
-            get;
-            set;
-        }
-
-        private static string RedisPasswd
         {
             get;
             set;
@@ -88,7 +69,7 @@ namespace MT4Proxy.NET.Core
 
         public CopyServer()
         {
-            CreateTime = DateTime.MinValue;
+            Source = new DockServer();
         }
 
         private bool EnableRunning;
@@ -102,6 +83,7 @@ namespace MT4Proxy.NET.Core
                 return;
             }
             EnableRunning = true;
+            PumpServer.OnNewTrade += PushTrade;
             if (_thProc == null)
             {
                 _thProc = new Thread(CopyProc);
@@ -110,83 +92,19 @@ namespace MT4Proxy.NET.Core
             }
             logger.Info("复制服务已经启动");
         }
-        private RedisClient Connection
-        {
-            get
-            {
-                RetryTimes = 3;
-                while (RetryTimes-- > 0)
-                {
-                    try
-                    {
-                        if (_connection == null || ((DateTime.Now - CreateTime).TotalSeconds > 30))
-                        {
-                            if (_connection != null)
-                            {
-                                try
-                                {
-                                    _connection.Dispose();
-                                    _connection = null;
-                                }
-                                catch { }
-                            }
-                            _connection = new RedisClient(RedisHost, RedisPort);
-                            _connection.Auth(RedisPasswd);
-                            CreateTime = DateTime.Now;
-                        }
-                        break;
-                    }
-                    catch (Exception e)
-                    {
-                        var logger = LogManager.GetLogger("common");
-                        logger.Warn(
-                            string.Format("MySQL连接建立失败，一秒之后重试，剩余机会{0}",
-                            RetryTimes + 1), e);
-                        Thread.Sleep(1000);
-                        continue;
-                    }
-                }
-                if (RetryTimes == -1)
-                {
-                    var logger = LogManager.GetLogger("common");
-                    logger.Error("MySQL连接建立失败，请立即采取措施保障丢失的数据！");
-                    return null;
-                }
-                else
-                {
-                    return _connection;
-                }
-            }
-            set
-            {
-                _connection = value;
-            }
-        }
-
-        private int RetryTimes
-        {
-            get;
-            set;
-        }
-
-        private RedisClient _connection = null;
-
-        private DateTime CreateTime
-        {
-            get;
-            set;
-        }
 
         public void Stop()
         {
             EnableRunning = false;
+            PumpServer.OnNewTrade -= PushTrade;
             if (!Enable)
                 ServerContainer.FinishStop();
         }
 
-        public void PushTrade(TRANS_TYPE aType, TradeRecordResult aTrade)
+        public void PushTrade(object sender, TradeInfoEventArgs e)
         {
-            _queNewTrades.Enqueue(new Tuple<TRANS_TYPE, TradeRecordResult>(aType, aTrade));
+            _queNewTrades.Enqueue(new Tuple<TRANS_TYPE, TradeRecordResult>
+                (e.TradeType, e.Trade));
             _signal.Release();
         }
 
@@ -198,7 +116,7 @@ namespace MT4Proxy.NET.Core
                 _queNewTrades.TryDequeue(out item);
                 var trade_type = item.Item1;
                 var trade = item.Item2;
-                var connection = Connection;
+                var connection = Source.RedisCopy;
                 if (IsCopyTrade(trade.order))
                     continue;
                 var key = string.Empty;
@@ -288,7 +206,11 @@ namespace MT4Proxy.NET.Core
         private Thread _thProc = null;
         private ConcurrentQueue<Tuple<TRANS_TYPE, TradeRecordResult>> _queNewTrades = 
             new ConcurrentQueue<Tuple<TRANS_TYPE, TradeRecordResult>>();
-        private MysqlServer _db = new MysqlServer();
+        private DockServer Source
+        {
+            get;
+            set;
+        }
         private NameValueCollection _collection = new NameValueCollection();
         private System.Threading.Semaphore _signal = new System.Threading.Semaphore(0, 20000);
     }
