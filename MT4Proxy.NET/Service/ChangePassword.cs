@@ -56,7 +56,7 @@ namespace MT4Proxy.NET.Service
             }
             catch (Exception e)
             {
-                var logger = LogManager.GetLogger("common");
+                var logger = Utils.CommonLog;
                 logger.Error(e.Message + e.StackTrace);
             }
         }

@@ -13,11 +13,11 @@ namespace MT4Proxy.NET
     {
         public void Initialize()
         {
-            var logger = LogManager.GetLogger("common");
+            var logger = Utils.CommonLog;
             var lstDelay = new List<double>();
             var lstOffset = new List<double>();
             var api = Poll.New();
-            logger.Info("时间校正正在开始");
+            logger.Info("时间校正服务正在开始");
             for (int i = 0; i < 15; i++)
             {
                 var T1 = DateTime.UtcNow;
@@ -39,7 +39,7 @@ namespace MT4Proxy.NET
             var varianceDelay = lstDelay.Sum(i => Math.Pow(i - avgDelay, 2));
             logger.Info("时间平均偏移{0}小时，延迟{1}毫秒",
                     avgOffset / 1000 / 3600, avgDelay);
-            if (avgDelay > 50)
+            if (avgDelay > 20)
                 logger.Warn("警告，系统间延迟过高");
             if (varianceDelay > 8)
                 logger.Warn("警告，系统间网络不稳定");

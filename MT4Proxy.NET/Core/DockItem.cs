@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace MT4Proxy.NET.Core
 {
+    /// <summary>
+    /// 数据库对接服务对所有类型的连接共用的维护数据结构
+    /// </summary>
     class DockItem
     {
         public DockItem()

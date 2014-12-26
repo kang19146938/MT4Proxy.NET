@@ -76,7 +76,7 @@ namespace MT4Proxy.NET.Core
 
         public void Initialize()
         {
-            var logger = LogManager.GetLogger("common");
+            var logger = Utils.CommonLog;
             if(!Enable)
             {
                 logger.Info("复制服务被禁用");

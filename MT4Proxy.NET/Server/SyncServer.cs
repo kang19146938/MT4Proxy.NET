@@ -42,7 +42,7 @@ namespace MT4Proxy.NET.Core
         }
         public void SyncMaster()
         {
-            var logger = LogManager.GetLogger("common");
+            var logger = Utils.CommonLog;
             logger.Info("准备开始同步高手榜到MySQL");
             var now = DateTime.UtcNow.Date;
             var start_date = DateTime.UtcNow.AddDays(-30).Date;
@@ -140,7 +140,7 @@ namespace MT4Proxy.NET.Core
 
         public void SyncEquity()
         {
-            var logger = LogManager.GetLogger("common");
+            var logger = Utils.CommonLog;
             logger.Info("准备开始同步equity信息到MySQL");
             string sql = string.Format(
                 "SELECT DISTINCT {0} FROM user WHERE {0} IS NOT NULL;",

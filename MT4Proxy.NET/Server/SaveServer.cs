@@ -64,7 +64,7 @@ namespace MT4Proxy.NET
                 _tradeThread.IsBackground = true;
                 _tradeThread.Start();
             }
-            var logger = LogManager.GetLogger("common");
+            var logger = Utils.CommonLog;
             logger.Info("订单与报价同步服务已经启动");
         }
 
@@ -130,7 +130,7 @@ namespace MT4Proxy.NET
                     }
                     catch (Exception e)
                     {
-                        var logger = LogManager.GetLogger("common");
+                        var logger = Utils.CommonLog;
                         logger.Error(string.Format(
                             "行情MySQL操作失败,错误信息{0}\nSymbol:{1},Date:{2},Ask:{3},Bid:{4}",
                             e.Message, i.Item1, i.Item4, i.Item2, i.Item3));
@@ -168,7 +168,7 @@ namespace MT4Proxy.NET
             }
             catch (Exception e)
             {
-                var logger = LogManager.GetLogger("common");
+                var logger = Utils.CommonLog;
                 if (e is MySqlException)
                 {
                     var e_mysql = e as MySqlException;

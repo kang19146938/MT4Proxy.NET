@@ -143,7 +143,7 @@ namespace MT4Proxy.NET.Core
 
         public static void StartPoll()
         {
-            var logger = LogManager.GetLogger("common");
+            var logger = Utils.CommonLog;
             var configPath = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile;
             logger.Info(string.Format("配置文件位置:{0}",
                 configPath));

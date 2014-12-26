@@ -87,7 +87,7 @@ namespace MT4Proxy.NET.Service
                         aServer.Output = JsonConvert.SerializeObject(resp);
                         if (result != RET_CODE.RET_OK)
                         {
-                            var logger = LogManager.GetLogger("common");
+                            var logger = Utils.CommonLog;
                             logger.Error(string.Format("模拟账户充钱失败ID:{0},PASSWD:{1},NAME:{2},EMAIL:{3},GROUP:{4}",
                             args.login, args.password, args.name, args.email, args.group));
                         }
@@ -106,7 +106,7 @@ namespace MT4Proxy.NET.Service
                     resp.is_succ = result == RET_CODE.RET_OK;
                     resp.err_msg = Utils.GetErrorMessage(result);
                     aServer.Output = JsonConvert.SerializeObject(resp);
-                    var logger = LogManager.GetLogger("common");
+                    var logger = Utils.CommonLog;
                     logger.Error(string.Format("开户失败ID:{0},PASSWD:{1},NAME:{2},EMAIL:{3},GROUP:{4}",
                         args.login, args.password, args.name, args.email, args.group));
                 }

@@ -21,9 +21,12 @@ namespace MT4Proxy.NET.Core
         {
             ConnectString = aConfig.AppSettings["mysql_cs"];
             AccountConnectString = aConfig.AppSettings["mysql_account_cs"];
-            RedisHost = aConfig.AppSettings["redis_host"];
-            RedisPort = int.Parse(aConfig.AppSettings["redis_port"]);
-            RedisPasswd = aConfig.AppSettings["redis_password"];
+            RedisMainHost = aConfig.AppSettings["redis_host"];
+            RedisMainPort = int.Parse(aConfig.AppSettings["redis_port"]);
+            RedisMainPasswd = aConfig.AppSettings["redis_password"];
+            RedisCopyHost = aConfig.AppSettings["redis_copy_host"];
+            RedisCopyPort = int.Parse(aConfig.AppSettings["redis_copy_port"]);
+            RedisCopyPasswd = aConfig.AppSettings["redis_copy_password"];
         }
 
         public DockServer()
@@ -57,8 +60,8 @@ namespace MT4Proxy.NET.Core
             _redisMain = new DockItem() { Name = "RedisMain" };
             _redisMain.Create = new Func<object>(() =>
             {
-                var result = new RedisClient(RedisHost, RedisPort);
-                result.Auth(RedisPasswd);
+                var result = new RedisClient(RedisMainHost, RedisMainPort);
+                result.Auth(RedisMainPasswd);
                 return result;
             });
             _redisMain.Shutdown = new Action<object>((i) =>
@@ -70,8 +73,8 @@ namespace MT4Proxy.NET.Core
             _redisCopy = new DockItem() { Name = "RedisCopy" };
             _redisCopy.Create = new Func<object>(() =>
             {
-                var result = new RedisClient(RedisHost, RedisPort);
-                result.Auth(RedisPasswd);
+                var result = new RedisClient(RedisCopyHost, RedisCopyPort);
+                result.Auth(RedisCopyPasswd);
                 return result;
             });
             _redisCopy.Shutdown = new Action<object>((i) =>
@@ -83,7 +86,7 @@ namespace MT4Proxy.NET.Core
 
         public void Initialize()
         {
-            var logger = LogManager.GetLogger("common");
+            var logger = Utils.CommonLog;
             logger.Info("数据对接服务已启动");
         }
 
@@ -171,7 +174,7 @@ namespace MT4Proxy.NET.Core
                 }
                 catch (Exception e)
                 {
-                    var logger = LogManager.GetLogger("common");
+                    var logger = Utils.CommonLog;
                     logger.Warn(
                         string.Format("{0}连接建立失败，一秒之后重试，剩余机会{1}",
                         aItem.Name, aItem.RetryTimes + 1), e);
@@ -181,7 +184,7 @@ namespace MT4Proxy.NET.Core
             }
             if (aItem.RetryTimes == -1)
             {
-                var logger = LogManager.GetLogger("common");
+                var logger = Utils.CommonLog;
                 logger.Error(string.Format("{0}连接建立失败，请立即采取措施保障丢失的数据！",
                     aItem.Name));
                 return default(T);
@@ -204,19 +207,37 @@ namespace MT4Proxy.NET.Core
             set;
         }
 
-        private static string RedisHost
+        private static string RedisMainHost
         {
             get;
             set;
         }
 
-        private static int RedisPort
+        private static int RedisMainPort
         {
             get;
             set;
         }
 
-        private static string RedisPasswd
+        private static string RedisMainPasswd
+        {
+            get;
+            set;
+        }
+
+        private static string RedisCopyHost
+        {
+            get;
+            set;
+        }
+
+        private static int RedisCopyPort
+        {
+            get;
+            set;
+        }
+
+        private static string RedisCopyPasswd
         {
             get;
             set;

@@ -8,11 +8,19 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Dynamic;
 using System.Threading;
+using NLog;
 
 namespace MT4Proxy.NET.Core
 {
     public static class Utils
     {
+        public static Logger CommonLog
+        {
+            get
+            {
+                return LogManager.GetLogger("common");
+            }
+        }
         public static bool SignalWait(ref bool aCrond, Semaphore aSignal, int aTimeoutMS=1000)
         {
             while (true)
