@@ -26,6 +26,7 @@ namespace MT4Proxy.NET.Core
             Enable = bool.Parse(aConfig.AppSettings["enable_copy"]);
             if (!Enable)
                 return;
+            RedisNewCopyOrderKey = aConfig.AppSettings["redis_copy_orders_id_key"];
             RedisCopyOrderFromTemplate = aConfig.AppSettings["redis_copy_orders_from_template"];
             RedisCopyOrderToTemplate = aConfig.AppSettings["redis_copy_orders_to_template"];
             RedisCopyUserTemplate = aConfig.AppSettings["redis_copy_user_template"];
@@ -33,6 +34,12 @@ namespace MT4Proxy.NET.Core
             RedisCopyRateTemplate = aConfig.AppSettings["redis_copy_rate_template"];
         }
         private static bool Enable
+        {
+            get;
+            set;
+        }
+
+        public static string RedisNewCopyOrderKey
         {
             get;
             set;
@@ -91,6 +98,7 @@ namespace MT4Proxy.NET.Core
                 _thProc.IsBackground = true;
                 _thProc.Start();
             }
+            ServerContainer.ForkServer<SaveServer>();
             logger.Info("复制服务已经启动");
         }
 
@@ -104,29 +112,45 @@ namespace MT4Proxy.NET.Core
 
         public void WhenNewTrade(object sender, TradeInfoEventArgs e)
         {
-            _queNewTrades.Enqueue(new Tuple<TRANS_TYPE, TradeRecordResult>
-                (e.TradeType, e.Trade));
+            _queNewTrades.Enqueue(e);
             _signal.Release();
         }
 
         private void CopyProc()
         {
-            Tuple<TRANS_TYPE, TradeRecordResult> item = null;
+            TradeInfoEventArgs item = null;
             while (Utils.SignalWait(ref EnableRunning, _signal))
             {
                 _queNewTrades.TryDequeue(out item);
-                var trade_type = item.Item1;
-                var trade = item.Item2;
-                var connection = Source.RedisCopy;
-                
-                var key = string.Empty;
-                key = string.Format(RedisCopyOrderToTemplate, trade.order);
-                var is_copy = trade.comment.Contains("copy");
-                var ucode = connection.Get(key);
-                if (is_copy)
-                    continue;
-                var mt4_from = trade.login;
                 var api = Poll.New();
+                var trade_type = item.TradeType;
+                var trade = item.Trade;
+                var connection = Source.RedisCopy;
+                var key = string.Empty;
+                var handler = OnNewTrade;
+                if(!string.IsNullOrWhiteSpace(trade.comment))
+                {
+                    var order_id = Convert.ToInt64(trade.comment, 16);
+                    key = string.Format(RedisCopyOrderToTemplate, order_id);
+                    var value = connection.Get(key);
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        var values = value.Split(',');
+                        var ucode_from = values[0];
+                        var ucode_to = values[1];
+                        item.FromUsercode = ucode_from;
+                        item.ToUsercode = ucode_to;
+                        if (handler != null)
+                            handler(this, item);
+                        if(item.TradeType == TRANS_TYPE.TRANS_DELETE)
+                            connection.Del(key);
+                        continue;
+                    }
+                }
+                if (handler != null)
+                    handler(this, item);
+                var mt4_from = trade.login;
+                
                 if(trade_type == TRANS_TYPE.TRANS_ADD)
                 {
                     
@@ -144,16 +168,22 @@ namespace MT4Proxy.NET.Core
                         var values = i.Split(',');
                         var mt4_to = int.Parse(values[0]);
                         var source = values[1];
-                        var user_code = values[2];
+                        var to_user_code = values[2];
+                        var from_user_code = values[3];
                         key = string.Format(RedisCopyRateTemplate, mt4_to, mt4_from);
                         var rate = int.Parse(connection.Get(key));
-                        var now = DateTime.Now.AddHours(3);
-                        //if (Math.Abs((now - trade_date).TotalSeconds) > 1)
-                        //    break;
+                        var now = TimeServer.Now;
+                        if (Math.Abs((now - trade_date).TotalSeconds) > 1)
+                            break;
                         //开仓here
                         var volnum = (int)(rate * trade.volume * 0.01);
                         if (volnum < 0)
                             continue;
+                        key = RedisNewCopyOrderKey;
+                        var order_id = connection.Incr(key);
+                        key = string.Format(RedisCopyOrderToTemplate, order_id);
+                        var value = string.Format("{0},{1}", from_user_code, to_user_code);
+                        connection.Set(key, value);
                         var args = new TradeTransInfoArgsResult
                         {
                             type = TradeTransInfoTypes.TT_BR_ORDER_OPEN,
@@ -162,16 +192,15 @@ namespace MT4Proxy.NET.Core
                             price = trade.open_price,
                             symbol = trade.symbol,
                             volume = volnum,
-                            comment = "copy",
+                            comment = order_id.ToString("X"),
                         };
                         var result = api.TradeTransaction(ref args);
                         if (result == RET_CODE.RET_OK)
                         {
                             key = string.Format(RedisCopyOrderFromTemplate, trade.order);
-                            var value = string.Format("{0},{1}", args.order, args.volume);
+                            value = string.Format("{0},{1},{2}", 
+                                args.order, args.volume, order_id);
                             connection.SAdd(key, value);
-                            key = string.Format(RedisCopyOrderToTemplate, args.order);
-                            connection.Set(key, user_code);
                         }
                     }
                 }
@@ -184,20 +213,18 @@ namespace MT4Proxy.NET.Core
                         var arr = i.Split(',');
                         var copy_order = int.Parse(arr[0]);
                         var volume = int.Parse(arr[1]);
-                        //平仓here
+                        var order_id = arr[2];
                         var args = new TradeTransInfoArgsResult
                         {
                             type = TradeTransInfoTypes.TT_BR_ORDER_CLOSE,
                             cmd = (short)trade.cmd,
                             order = copy_order,
-                            price = trade.open_price,
+                            price = trade.close_price,
                             volume = volume,
                         };
                         var result = api.TradeTransaction(ref args);
                         if (result == RET_CODE.RET_OK)
-                        {
                             connection.SRem(key, i);
-                        }
                     }
                 }
                 Poll.Release(api);
@@ -206,8 +233,8 @@ namespace MT4Proxy.NET.Core
         }
 
         private Thread _thProc = null;
-        private ConcurrentQueue<Tuple<TRANS_TYPE, TradeRecordResult>> _queNewTrades = 
-            new ConcurrentQueue<Tuple<TRANS_TYPE, TradeRecordResult>>();
+        private ConcurrentQueue<TradeInfoEventArgs> _queNewTrades =
+            new ConcurrentQueue<TradeInfoEventArgs>();
         private DockServer Source
         {
             get;
