@@ -11,6 +11,7 @@ namespace MT4Proxy.NET.EventArg
     {
         public TradeInfoEventArgs(TRANS_TYPE aType, TradeRecordResult aTrade)
         {
+            CopyUsercode = null;
             TradeType = aType;
             Trade = aTrade;
         }
@@ -20,5 +21,11 @@ namespace MT4Proxy.NET.EventArg
 
         public TradeRecordResult Trade
         { get; private set; }
+
+        public string CopyUsercode
+        {
+            get;
+            set;
+        }
     }
 }

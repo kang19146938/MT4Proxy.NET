@@ -11,6 +11,7 @@ namespace MT4Proxy.NET.Core
 {
     class ConfigServer : IServer
     {
+        FileSystemWatcher _fileWather = null;
         public void Initialize()
         {
             var logger = Utils.CommonLog;
@@ -23,12 +24,12 @@ namespace MT4Proxy.NET.Core
             if (!File.Exists(configPath))
                 throw new Exception("配置文件不存在！");
             ConfigObject();
-            var watcher = new FileSystemWatcher();
-            watcher.Path = Path.GetDirectoryName(configPath);
-            watcher.Filter = Path.GetFileName(configPath);  
-            watcher.EnableRaisingEvents = true;//开启提交事件  
-            watcher.NotifyFilter = NotifyFilters.LastWrite;
-            watcher.Changed += OnChanged;
+            _fileWather = new FileSystemWatcher();
+            _fileWather.Path = Path.GetDirectoryName(configPath);
+            _fileWather.Filter = Path.GetFileName(configPath);
+            _fileWather.EnableRaisingEvents = true;//开启提交事件  
+            _fileWather.NotifyFilter = NotifyFilters.LastWrite;
+            _fileWather.Changed += OnChanged;
         }
 
         private static void OnChanged(object source, FileSystemEventArgs e)
@@ -40,6 +41,12 @@ namespace MT4Proxy.NET.Core
 
         public void Stop()
         {
+            if(_fileWather != null)
+            {
+                _fileWather.Changed -= OnChanged;
+                _fileWather.Dispose();
+                _fileWather = null;
+            }
             ServerContainer.FinishStop();
         }
 

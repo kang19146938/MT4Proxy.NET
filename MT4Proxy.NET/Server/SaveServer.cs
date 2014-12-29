@@ -39,7 +39,7 @@ namespace MT4Proxy.NET
             CFD_List["mSP"] = 200000;
             EnableRunning = true;
             PumpServer.OnNewQuote += WhenNewQuote;
-            PumpServer.OnNewTrade += WhenNewTrade;
+            CopyServer.OnNewTrade += WhenNewTrade;
             if (_quoteTimer == null)
             {
                 _quoteTimer = new Timer(10000);
@@ -72,7 +72,7 @@ namespace MT4Proxy.NET
         {
             EnableRunning = false;
             PumpServer.OnNewQuote -= WhenNewQuote;
-            PumpServer.OnNewTrade -= WhenNewTrade;
+            CopyServer.OnNewTrade -= WhenNewTrade;
         }
 
         private void SaveQuoteProc(object sender, ElapsedEventArgs e)

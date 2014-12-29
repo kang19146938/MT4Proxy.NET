@@ -20,7 +20,7 @@ namespace MT4Proxy.NET.Core
     /// </summary>
     class CopyServer : ConfigBase, IServer
     {
-        public event EventHandler<TradeInfoEventArgs> OnNewTrade = null;
+        public static event EventHandler<TradeInfoEventArgs> OnNewTrade = null;
         internal override void LoadConfig(NLog.Internal.ConfigurationManager aConfig)
         {
             Enable = bool.Parse(aConfig.AppSettings["enable_copy"]);
@@ -122,6 +122,7 @@ namespace MT4Proxy.NET.Core
                 var key = string.Empty;
                 key = string.Format(RedisCopyOrderToTemplate, trade.order);
                 var is_copy = trade.comment.Contains("copy");
+                var ucode = connection.Get(key);
                 if (is_copy)
                     continue;
                 var mt4_from = trade.login;
