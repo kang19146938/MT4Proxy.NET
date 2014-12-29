@@ -26,7 +26,7 @@ namespace MT4Proxy.NET
             }
         }
 
-        private int PumperCount
+        private static int PumperCount
         { get; set; }
 
         private static bool EnableRunning = false;
@@ -37,8 +37,8 @@ namespace MT4Proxy.NET
             var logger = Utils.CommonLog;
             logger.Info("MT4订阅服务已经启动");
             EnableRunning = true;
-            ServerContainer.ForkServer<SaveServer>();
             ServerContainer.ForkServer<CopyServer>();
+            StartPump();
         }
 
         public void Stop()

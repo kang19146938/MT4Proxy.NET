@@ -178,7 +178,7 @@ public enum class TradeTransInfoTypes : UCHAR
 };
 
 [StructLayoutAttribute(LayoutKind::Sequential)]
-public value struct TradeTransInfoArgs
+public value struct TradeTransInfoArgsResult
 {
 	TradeTransInfo ToNative()
 	{
@@ -199,6 +199,25 @@ public value struct TradeTransInfoArgs
 		ret.crc = crc;
 		return ret;
 	}
+
+	void FromNative(TradeTransInfo* aRecord)
+	{
+		type = (TradeTransInfoTypes)aRecord->type;
+		FIELD_COPY(aRecord, reserved);
+		FIELD_COPY(aRecord, cmd);
+		FIELD_COPY(aRecord, order);
+		FIELD_COPY(aRecord, orderby);
+		symbol = marshal_as<String^, char*>(aRecord->symbol);
+		FIELD_COPY(aRecord, volume);
+		FIELD_COPY(aRecord, price);
+		FIELD_COPY(aRecord, sl);
+		FIELD_COPY(aRecord, tp);
+		FIELD_COPY(aRecord, ie_deviation);
+		comment = marshal_as<String^, char*>(aRecord->comment);
+		FIELD_COPY(aRecord, expiration);
+		FIELD_COPY(aRecord, crc);
+	}
+
 	TradeTransInfoTypes  type;             // trade transaction type
 	char                 reserved;         // reserved
 	short                cmd;              // trade command

@@ -73,14 +73,14 @@ namespace MT4Proxy.NET.Service
                 {
                     if (!is_real && InitEqutiy > 0)
                     {
-                        var money_args = new TradeTransInfoArgs
+                        var money_args = new TradeTransInfoArgsResult
                         {
                             type = TradeTransInfoTypes.TT_BR_BALANCE,
                             cmd = 6,
                             orderby = Convert.ToInt32(dict["mt4UserID"]),
                             price = 10000.0
                         };
-                        result = api.TradeTransaction(money_args);
+                        result = api.TradeTransaction(ref money_args);
                         dynamic resp = new ExpandoObject();
                         resp.is_succ = result == RET_CODE.RET_OK;
                         resp.err_msg = Utils.GetErrorMessage(result);

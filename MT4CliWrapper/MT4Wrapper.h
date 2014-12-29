@@ -36,7 +36,7 @@ namespace MT4CliWrapper {
 
 		bool IsPumpAlive();
 	public: //Direct APIs
-		RET_CODE TradeTransaction(TradeTransInfoArgs);
+		RET_CODE TradeTransaction(TradeTransInfoArgsResult%);
 		RET_CODE MarginLevelRequest(const int login, MarginLevelArgs% level);
 		array<TradeRecordResult>^ UserRecordsRequest(const int logins, int from, int to);
 		RET_CODE OpenAccount(UserRecordArgs aArgs);

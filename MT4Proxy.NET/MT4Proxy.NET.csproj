@@ -126,6 +126,12 @@
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <Content Include="Dist\vcredist_x64.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Dist\vcredist_x86.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="libzmq.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

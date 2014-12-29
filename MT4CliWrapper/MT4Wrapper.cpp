@@ -249,9 +249,12 @@ int MT4Wrapper::PumpCallback(int code, int type, void *data, void *param)
 	return TRUE;
 }
 
-RET_CODE MT4Wrapper::TradeTransaction(TradeTransInfoArgs aArgs)
+RET_CODE MT4Wrapper::TradeTransaction(TradeTransInfoArgsResult% aArgs)
 {
-	return (RET_CODE)m_pManagerDirect->TradeTransaction(&aArgs.ToNative());
+	auto native = aArgs.ToNative();
+	auto result = (RET_CODE)m_pManagerDirect->TradeTransaction(&native);
+	aArgs.FromNative(&native);
+	return result;
 }
 
 RET_CODE MT4Wrapper::MarginLevelRequest(const int login, MarginLevelArgs% level)

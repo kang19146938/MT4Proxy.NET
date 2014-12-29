@@ -21,7 +21,7 @@ namespace MT4Proxy.NET.Service
                 aServer.Output = JsonConvert.SerializeObject(resp);
                 return;
             }
-            var args = new TradeTransInfoArgs
+            var args = new TradeTransInfoArgsResult
             {
                 type = Convert.ToInt32(dict["type"]),
                 cmd = Convert.ToInt16(dict["cmd"]),
@@ -34,7 +34,7 @@ namespace MT4Proxy.NET.Service
                 tp = Convert.ToDouble(dict["tp"]),
             };
             //if(args.type == TradeTransInfoTypes.TT_BR_BALANCE)
-            var result = aServer.MT4.TradeTransaction(args);
+            var result = aServer.MT4.TradeTransaction(ref args);
             resp.is_succ = result == 0;
             resp.errMsg = Utils.GetErrorMessage(result);
             resp.errCode = (int)result;
