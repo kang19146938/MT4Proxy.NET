@@ -143,34 +143,10 @@ namespace MT4Proxy.NET.Core
 
         public static void StartPoll()
         {
-            var logger = Utils.CommonLog;
-            var configPath = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile;
-            logger.Info(string.Format("配置文件位置:{0}",
-                configPath));
-            Console.WriteLine(string.Format("Config file path:{0}",
-                configPath));
-            if(!File.Exists(configPath))
-            {
-                throw new Exception("配置文件不存在！");
-            }
-            ConfigObject();
+            ServerContainer.ForkServer<ConfigServer>();
             var thDog = new Thread(DogProc);
             thDog.IsBackground = true;
             thDog.Start();
-        }
-
-        private static void ConfigObject()
-        {
-            var config = new ConfigurationManager();
-            Assembly.GetExecutingAssembly().GetTypes()
-                .Where(i => i.GetCustomAttribute<ConfigAttribute>(true) != null)
-                .Where(i => i.FullName != typeof(ConfigBase).FullName)
-                .All(i =>
-                {
-                    var item = Activator.CreateInstance(i) as ConfigBase;
-                    item.LoadConfig(config);
-                    return true;
-                });
         }
 
         public static void StopPoll()

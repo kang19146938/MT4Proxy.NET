@@ -121,7 +121,7 @@ namespace MT4Proxy.NET.Core
                 
                 var key = string.Empty;
                 key = string.Format(RedisCopyOrderToTemplate, trade.order);
-                var is_copy = connection.Exists(key);
+                var is_copy = trade.comment.Contains("copy");
                 if (is_copy)
                     continue;
                 var mt4_from = trade.login;
@@ -161,6 +161,7 @@ namespace MT4Proxy.NET.Core
                             price = trade.open_price,
                             symbol = trade.symbol,
                             volume = volnum,
+                            comment = "copy",
                         };
                         var result = api.TradeTransaction(ref args);
                         if (result == RET_CODE.RET_OK)
@@ -202,14 +203,6 @@ namespace MT4Proxy.NET.Core
             }
             ServerContainer.FinishStop();
         }
-
-        private bool IsCopyTrade(int aOrder)
-        {
-            if (aOrder < 1073741824)
-                return false;
-            return true;
-        }
-
 
         private Thread _thProc = null;
         private ConcurrentQueue<Tuple<TRANS_TYPE, TradeRecordResult>> _queNewTrades = 

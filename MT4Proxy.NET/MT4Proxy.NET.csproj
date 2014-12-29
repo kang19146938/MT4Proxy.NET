@@ -91,6 +91,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Attribute\ConfigAttribute.cs" />
+    <Compile Include="Server\ConfigServer.cs" />
     <Compile Include="Server\DockServer.cs" />
     <Compile Include="Core\DockItem.cs" />
     <Compile Include="Core\IServer.cs" />
