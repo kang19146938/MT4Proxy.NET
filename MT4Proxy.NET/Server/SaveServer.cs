@@ -19,7 +19,8 @@ namespace MT4Proxy.NET
     {
         public SaveServer()
         {
-            Source = new DockServer();
+            TradeSource = new DockServer();
+            QuoteSource = new DockServer();
         }
 
         private bool EnableRunning = false;
@@ -55,10 +56,10 @@ namespace MT4Proxy.NET
                         {
                             TradeInfoEventArgs item = null;
                             _queTrades.TryDequeue(out item);
-                            PushTrade(item.TradeType, item.Trade);
+                            PushTrade(item.TradeType, item.Trade, item.FromUsercode, item.ToUsercode);
                         }
                         foreach (var item in _queTrades.ToArray())
-                            PushTrade(item.TradeType, item.Trade);
+                            PushTrade(item.TradeType, item.Trade, item.FromUsercode, item.ToUsercode);
                         ServerContainer.FinishStop();
                     });
                 _tradeThread.IsBackground = true;
@@ -96,7 +97,13 @@ namespace MT4Proxy.NET
                 timer.Start();
         }
 
-        private DockServer Source
+        private DockServer TradeSource
+        {
+            get;
+            set;
+        }
+
+        private DockServer QuoteSource
         {
             get;
             set;
@@ -113,7 +120,7 @@ namespace MT4Proxy.NET
             var sql = string.Empty;
             using (var cmd = new MySqlCommand())
             {
-                cmd.Connection = Source.MysqlSource;
+                cmd.Connection = QuoteSource.MysqlSource;
                 sql = "INSERT INTO quote(symbol, date, ask, bid) VALUES(@symbol, @date, @ask, @bid) " +
                     "ON DUPLICATE KEY UPDATE ask = @ask, bid = @bid";
                 cmd.CommandText = sql;
@@ -134,18 +141,18 @@ namespace MT4Proxy.NET
                         logger.Error(string.Format(
                             "行情MySQL操作失败,错误信息{0}\nSymbol:{1},Date:{2},Ask:{3},Bid:{4}",
                             e.Message, i.Item1, i.Item4, i.Item2, i.Item3));
-                        Source.MysqlSource = null;
+                        TradeSource.MysqlSource = null;
                     }
                 }
             }
         }
 
-        public void PushTrade(TRANS_TYPE aType, TradeRecordResult aRecord)
+        public void PushTrade(TRANS_TYPE aType, TradeRecordResult aRecord, 
+            string aFromCode=null, string aToCode=null)
         {
             string symbolPattern = @"^(?<symbol>[A-Za-z]+)(?<leverage>\d*)$";
             string symbolPattern_CFD = @"^(?<symbol>[A-Za-z]+)_(?<number>\d*)$";
             var recordString = string.Empty;
-            recordString = JsonConvert.SerializeObject(aRecord);
             try
             {
                 foreach (Match j in Regex.Matches(aRecord.symbol, symbolPattern))
@@ -154,7 +161,8 @@ namespace MT4Proxy.NET
                     var match = j.Groups;
                     if (!string.IsNullOrWhiteSpace(match["leverage"].ToString()))
                         leverage = int.Parse(match["leverage"].ToString());
-                    Trade2Mysql(aType, aRecord, j, leverage, 100000);
+                    Trade2Mysql(aType, aRecord, j, leverage, 100000, 1.0f,
+                        aFromCode, aToCode);
                 }
                 foreach (Match j in Regex.Matches(aRecord.symbol, symbolPattern_CFD))
                 {
@@ -168,6 +176,7 @@ namespace MT4Proxy.NET
             }
             catch (Exception e)
             {
+                recordString = JsonConvert.SerializeObject(aRecord);
                 var logger = Utils.CommonLog;
                 if (e is MySqlException)
                 {
@@ -179,18 +188,20 @@ namespace MT4Proxy.NET
                     }
                 }
                 logger.Error(string.Format("交易MySQL操作失败,错误信息{0}\n原始数据:{1}", e.Message, recordString));
-                Source.MysqlSource = null;
+                TradeSource.MysqlSource = null;
             }
         }
 
-        private void Trade2Mysql(TRANS_TYPE aType, TradeRecordResult aRecord, Match j, int leverage, double pov, float pip_coefficient = 1.0f)
+        private void Trade2Mysql(TRANS_TYPE aType, TradeRecordResult aRecord, Match j, 
+            int leverage, double pov, float pip_coefficient = 1.0f, 
+            string aFromCode=null, string aToCode=null)
         {
             var sql = string.Empty;
             var match = j.Groups;
             aRecord.symbol = match["symbol"].ToString();
             using (var cmd = new MySqlCommand())
             {
-                cmd.Connection = Source.MysqlSource;
+                cmd.Connection = TradeSource.MysqlSource;
                 if (aType == TRANS_TYPE.TRANS_ADD)
                 {
                     sql = "INSERT INTO `order`(mt4_id, order_id, " +
@@ -198,13 +209,15 @@ namespace MT4Proxy.NET
                         "state, open_price, sl, tp, close_time, value_date, " +
                         "expiration, reason, commission, commission_agent, storage, " +
                         "close_price, profit, taxes, magic, comment, internal_id, " +
-                        "activation, spread, margin_rate, leverage, pov, pip_coefficient) " +
+                        "activation, spread, margin_rate, leverage, pov, pip_coefficient, " + 
+                        "from_code, to_code) " +
                         " VALUES(@mt4id, @orderid, " +
                         "@login, @symbol, @digits, @cmd, @volume, @open_time, " +
                         "@state, @open_price, @sl, @tp, @close_time, @value_date, " +
                         "@expiration, @reason, @commission, @commission_agent, @storage, " +
                         "@close_price, @profit, @taxes, @magic, @comment, @internal_id, " +
-                        "@activation, @spread, @margin_rate, @leverage, @pov, @pip_coefficient)" +
+                        "@activation, @spread, @margin_rate, @leverage, @pov, @pip_coefficient, " +
+                        "@from_code, @to_code) " +
                         "ON DUPLICATE KEY UPDATE " +
                         "login=@login, symbol=@symbol, digits=@digits, cmd=@cmd, volume=@volume, open_time=@open_time, " +
                         "state=@state, open_price=@open_price, sl=@sl, tp=@tp, close_time=@close_time, value_date=@value_date, " +
@@ -244,6 +257,8 @@ namespace MT4Proxy.NET
                     cmd.Parameters.AddWithValue("@leverage", leverage);
                     cmd.Parameters.AddWithValue("@pov", pov);
                     cmd.Parameters.AddWithValue("@pip_coefficient", pip_coefficient);
+                    cmd.Parameters.AddWithValue("@from_code", aFromCode);
+                    cmd.Parameters.AddWithValue("@to_code", aToCode);
                     cmd.ExecuteNonQuery();
                 }
                 else if (aType == TRANS_TYPE.TRANS_DELETE)
@@ -253,13 +268,15 @@ namespace MT4Proxy.NET
                         "state, open_price, sl, tp, close_time, value_date, " +
                         "expiration, reason, commission, commission_agent, storage, " +
                         "close_price, profit, taxes, magic, comment, internal_id, " +
-                        "activation, spread, margin_rate, leverage, pov, pip_coefficient) " +
+                        "activation, spread, margin_rate, leverage, pov, pip_coefficient, " + 
+                        "from_code, to_code) " +
                         "VALUES(@mt4id, @timestamp, @orderid, " +
                         "@login, @symbol, @digits, @cmd, @volume, @open_time, " +
                         "@state, @open_price, @sl, @tp, @close_time, @value_date, " +
                         "@expiration, @reason, @commission, @commission_agent, @storage, " +
                         "@close_price, @profit, @taxes, @magic, @comment, @internal_id, " +
-                        "@activation, @spread, @margin_rate, @leverage, @pov, @pip_coefficient)" +
+                        "@activation, @spread, @margin_rate, @leverage, @pov, @pip_coefficient, " + 
+                        "@from_code, @to_code) " +
                         "ON DUPLICATE KEY UPDATE " +
                         "login=@login, symbol=@symbol, digits=@digits, cmd=@cmd, volume=@volume, open_time=@open_time, " +
                         "state=@state, open_price=@open_price, sl=@sl, tp=@tp, close_time=@close_time, value_date=@value_date, " +
@@ -300,6 +317,8 @@ namespace MT4Proxy.NET
                     cmd.Parameters.AddWithValue("@leverage", leverage);
                     cmd.Parameters.AddWithValue("@pov", pov);
                     cmd.Parameters.AddWithValue("@pip_coefficient", pip_coefficient);
+                    cmd.Parameters.AddWithValue("@from_code", aFromCode);
+                    cmd.Parameters.AddWithValue("@to_code", aToCode);
                     cmd.ExecuteNonQuery();
                     cmd.Parameters.Clear();
                     cmd.CommandText = "DELETE FROM `order` WHERE order_id = @orderid";
