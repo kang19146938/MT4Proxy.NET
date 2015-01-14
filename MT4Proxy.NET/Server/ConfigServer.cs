@@ -23,11 +23,11 @@ namespace MT4Proxy.NET.Core
                 configPath));
             if (!File.Exists(configPath))
                 throw new Exception("配置文件不存在！");
-            ConfigObject();
+            ConfigObjects();
             _fileWather = new FileSystemWatcher();
             _fileWather.Path = Path.GetDirectoryName(configPath);
             _fileWather.Filter = Path.GetFileName(configPath);
-            _fileWather.EnableRaisingEvents = true;//开启提交事件  
+            _fileWather.EnableRaisingEvents = true;
             _fileWather.NotifyFilter = NotifyFilters.LastWrite;
             _fileWather.Changed += OnChanged;
         }
@@ -36,7 +36,8 @@ namespace MT4Proxy.NET.Core
         {
             var logger = Utils.CommonLog;
             logger.Info("重新读取配置信息");
-            ConfigObject();
+            System.Configuration.ConfigurationManager.RefreshSection("appSettings");
+            ConfigObjects();
         }
 
         public void Stop()
@@ -50,7 +51,7 @@ namespace MT4Proxy.NET.Core
             ServerContainer.FinishStop();
         }
 
-        private static void ConfigObject()
+        private static void ConfigObjects()
         {
             var config = new ConfigurationManager();
             Assembly.GetExecutingAssembly().GetTypes()

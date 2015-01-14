@@ -142,7 +142,8 @@ namespace MT4Proxy.NET.Core
                         using (var server = new ZmqServer(mt4_id, !_attrDict[api_name].DisableMT4))
                         {
                             server.Logger = LogManager.GetLogger("common");
-                            server.Logger.Info(string.Format("ZMQ,recv request:{0}", item));
+                            if(_attrDict[api_name].ShowRequest)
+                                server.Logger.Info(string.Format("ZMQ,recv request:{0}", item));
                             watch.Restart();
                             serviceobj.OnRequest(server, dict);
                             if (server.Output != null)
@@ -150,16 +151,18 @@ namespace MT4Proxy.NET.Core
                                 socket.Send(server.Output);
                                 watch.Stop();
                                 var elsp = watch.ElapsedMilliseconds;
-                                server.Logger.Info(string.Format("ZMQ[{0}ms] response:{1}",
-                                    elsp, server.Output));
+                                if (_attrDict[api_name].ShowResponse)
+                                    server.Logger.Info(string.Format("ZMQ[{0}ms] response:{1}",
+                                        elsp, server.Output));
                             }
                             else
                             {
                                 socket.Send(string.Empty);
                                 watch.Stop();
                                 var elsp = watch.ElapsedMilliseconds;
-                                server.Logger.Warn(string.Format("ZMQ[{0}ms] response empty,source:{1}", 
-                                    elsp, item));                            
+                                if (_attrDict[api_name].ShowResponse)
+                                    server.Logger.Warn(string.Format("ZMQ[{0}ms] response empty,source:{1}", 
+                                        elsp, item));                            
                             }
                         }
                     }
@@ -167,7 +170,7 @@ namespace MT4Proxy.NET.Core
                 catch(Exception e)
                 {
                     var logger = LogManager.GetLogger("clr_error");
-                    logger.Error("处理单个ZMQ请求失败", e.StackTrace);
+                    logger.Error("处理单个ZMQ请求失败,{0}", e.StackTrace);
                     socket.Send(string.Empty);
                 }
                 finally

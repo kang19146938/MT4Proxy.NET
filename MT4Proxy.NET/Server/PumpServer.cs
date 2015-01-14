@@ -44,8 +44,12 @@ namespace MT4Proxy.NET
         public void Stop()
         {
             EnableRunning = false;
-            foreach(var i in _lstRunning)
+            System.Threading.Thread.Sleep(1000);
+            foreach (var i in _lstRunning)
+            {
+                i.Timer.Stop();
                 i.FreeMT4(i);
+            }
             ServerContainer.FinishStop();
         }
 
@@ -87,7 +91,7 @@ namespace MT4Proxy.NET
                     continue;
                 var trade = item.Item2;
                 var trade_type = item.Item1;
-                if (trade.timestamp != _lastTradeTime)
+                if (trade.timestamp > _lastTradeTime)
                 {
                     _tradeOrders = new ConcurrentBag<int>();
                     _lastTradeTime = trade.timestamp;
@@ -176,9 +180,8 @@ namespace MT4Proxy.NET
 
         private void WhenNewTrade(object sender, TradeInfoEventArgs e)
         {
-            var handler = OnNewTrade;
-            if(handler != null)
-                handler(sender, e);
+            _queTrades.Enqueue(new Tuple<TRANS_TYPE, TradeRecordResult>(e.TradeType, e.Trade));
+            _tradeSignal.Release();
         }
 
         public static event EventHandler<TradeInfoEventArgs> OnNewTrade = null;
@@ -186,10 +189,13 @@ namespace MT4Proxy.NET
 
         private void FreeMT4(PumpServer aPump)
         {
-            aPump.MT4.OnNewTrade -= WhenNewTrade;
-            aPump.MT4.OnNewQuote -= WhenNewQuote;
-            aPump.MT4.Dispose();
-            aPump.MT4 = null;
+            if (aPump.MT4 != null)
+            {
+                aPump.MT4.OnNewTrade -= WhenNewTrade;
+                aPump.MT4.OnNewQuote -= WhenNewQuote;
+                aPump.MT4.Dispose();
+                aPump.MT4 = null;
+            }
         }
     }
 }

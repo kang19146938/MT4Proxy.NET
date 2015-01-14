@@ -4,6 +4,7 @@ using MT4Proxy.NET.EventArg;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using NLog;
+using NLog.Internal;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -15,12 +16,23 @@ using System.Timers;
 
 namespace MT4Proxy.NET
 {
-    internal class SaveServer: IServer
+    internal class SaveServer: ConfigBase, IServer
     {
         public SaveServer()
         {
             TradeSource = new DockServer();
             QuoteSource = new DockServer();
+        }
+
+        internal override void LoadConfig(ConfigurationManager aConfig)
+        {
+            RedisSocialTradeKey = aConfig.AppSettings["redis_social_trade_key"];
+        }
+
+        private static string RedisSocialTradeKey
+        {
+            get;
+            set;
         }
 
         private bool EnableRunning = false;
@@ -56,10 +68,10 @@ namespace MT4Proxy.NET
                         {
                             TradeInfoEventArgs item = null;
                             _queTrades.TryDequeue(out item);
-                            PushTrade(item.TradeType, item.Trade, item.FromUsercode, item.ToUsercode);
+                            PushTrade(item);
                         }
                         foreach (var item in _queTrades.ToArray())
-                            PushTrade(item.TradeType, item.Trade, item.FromUsercode, item.ToUsercode);
+                            PushTrade(item);
                         ServerContainer.FinishStop();
                     });
                 _tradeThread.IsBackground = true;
@@ -147,48 +159,65 @@ namespace MT4Proxy.NET
             }
         }
 
-        public void PushTrade(TRANS_TYPE aType, TradeRecordResult aRecord, 
-            string aFromCode=null, string aToCode=null)
+        public void PushTrade(TradeInfoEventArgs aTrade)
         {
             string symbolPattern = @"^(?<symbol>[A-Za-z]+)(?<leverage>\d*)$";
             string symbolPattern_CFD = @"^(?<symbol>[A-Za-z]+)_(?<number>\d*)$";
             var recordString = string.Empty;
             try
             {
-                foreach (Match j in Regex.Matches(aRecord.symbol, symbolPattern))
+                foreach (Match j in Regex.Matches(aTrade.Trade.symbol, symbolPattern))
                 {
                     var leverage = 100;
                     var match = j.Groups;
                     if (!string.IsNullOrWhiteSpace(match["leverage"].ToString()))
                         leverage = int.Parse(match["leverage"].ToString());
-                    Trade2Mysql(aType, aRecord, j, leverage, 100000, 1.0f,
-                        aFromCode, aToCode);
+                    Trade2Social(aTrade);
+                    Trade2Mysql(aTrade.TradeType, aTrade.Trade, j, leverage, 100000, 1.0f,
+                        aTrade.FromUsercode, aTrade.ToUsercode);
                 }
-                foreach (Match j in Regex.Matches(aRecord.symbol, symbolPattern_CFD))
+                foreach (Match j in Regex.Matches(aTrade.Trade.symbol, symbolPattern_CFD))
                 {
                     var match = j.Groups;
                     var symbol = match["symbol"].ToString();
                     var pov = 100000.0;
                     if (CFD_List.ContainsKey(symbol))
                         pov = CFD_List[symbol];
-                    Trade2Mysql(aType, aRecord, j, 100, pov, 10.0f);
+                    Trade2Social(aTrade);
+                    Trade2Mysql(aTrade.TradeType, aTrade.Trade, j, 100, pov, 10.0f);
                 }
             }
             catch (Exception e)
             {
-                recordString = JsonConvert.SerializeObject(aRecord);
+                recordString = JsonConvert.SerializeObject(aTrade);
                 var logger = Utils.CommonLog;
                 if (e is MySqlException)
                 {
                     var e_mysql = e as MySqlException;
                     if (e_mysql.Number == 1062 && e_mysql.Message.Contains("cb_unique") && e_mysql.Message.Contains("Duplicate entry"))
                     {
-                        logger.Info(string.Format("交易MySQL数据已存在,单号:{0}\n原始数据:{1}", aRecord.order, recordString));
+                        logger.Info(string.Format("交易MySQL数据已存在,单号:{0}\n原始数据:{1}", aTrade.Trade.order, recordString));
                         return;
                     }
                 }
                 logger.Error(string.Format("交易MySQL操作失败,错误信息{0}\n原始数据:{1}", e.Message, recordString));
                 TradeSource.MysqlSource = null;
+            }
+        }
+
+        private void Trade2Social(TradeInfoEventArgs e)
+        {
+            try
+            {
+                if (e.TradeType != TRANS_TYPE.TRANS_DELETE)
+                    return;
+                var key = RedisSocialTradeKey;
+                var recordString = JsonConvert.SerializeObject(e);
+                TradeSource.RedisSocial.LPush(key, recordString);
+            }
+            catch(Exception excp)
+            {
+                Utils.CommonLog.Error("同步到social数据库失败,{0},{1}", excp.Message, excp.StackTrace);
             }
         }
 

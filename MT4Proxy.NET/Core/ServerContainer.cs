@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,9 +30,14 @@ namespace MT4Proxy.NET.Core
             foreach (var i in items)
                 i.Stop();
             var finish_count = 0;
+            var watch = new Stopwatch();
+            watch.Start();
             while(finish_count < items.Count)
             {
-                var fine = _stopSignal.WaitOne(10000);
+                var timeout = 10000 - watch.ElapsedMilliseconds;
+                if (timeout < 0)
+                    timeout = 0;
+                var fine = _stopSignal.WaitOne(TimeSpan.FromMilliseconds(timeout));
                 if (fine)
                     finish_count++;
                 else

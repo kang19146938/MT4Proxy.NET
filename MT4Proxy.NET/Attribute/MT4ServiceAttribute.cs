@@ -8,6 +8,11 @@ namespace MT4Proxy.NET.Core
 {
     public class MT4ServiceAttribute : Attribute
     {
+        public MT4ServiceAttribute()
+        {
+            ShowRequest = ShowResponse = true;
+        }
+
         public bool DisableMT4
         {
             get;
@@ -23,6 +28,18 @@ namespace MT4Proxy.NET.Core
         {
             get;
             set;
+        }
+
+        public bool ShowRequest
+        {
+            get;
+            set;
+        }
+
+        public bool ShowResponse
+        {
+            set;
+            get;
         }
     }
 }

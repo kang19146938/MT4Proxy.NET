@@ -6,7 +6,7 @@ using System.Dynamic;
 
 namespace MT4Proxy.NET.Service
 {
-    [MT4Service(EnableZMQ = true)]
+    [MT4Service(EnableZMQ = true, ShowRequest = false, ShowResponse = false)]
     class Equity : IService
     {
         public void OnRequest(IInputOutput aServer, dynamic aJson)

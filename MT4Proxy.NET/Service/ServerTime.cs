@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace MT4Proxy.NET.Service
 {
-    [MT4Service(EnableZMQ = true, DisableMT4 = true)]
+    [MT4Service(EnableZMQ = true, DisableMT4 = true, ShowRequest=false, ShowResponse = false)]
     class ServerTime : IService
     {
         public void OnRequest(IInputOutput aServer, dynamic aJson)

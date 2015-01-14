@@ -58,16 +58,17 @@ namespace MT4Proxy.NET
                 logger.Info("准备启动MT4池");
                 Poll.StartPoll();
                 ServerContainer.ForkServer<DockServer>();
+                ServerContainer.ForkServer<TimeServer>();
                 if (sync)
                 {
                     ServerContainer.ForkServer<SyncServer>();
                     var syncer = new SyncServer();
+                    syncer.SyncSummary();
                     syncer.SyncEquity();
                     syncer.SyncMaster();
                     Poll.StopPoll();
                     return false;
                 }
-                ServerContainer.ForkServer<TimeServer>();
                 ServerContainer.ForkServer<PumpServer>();
                 logger.Info("准备启动Zmq监听服务");
                 ServerContainer.ForkServer<ZmqServer>();

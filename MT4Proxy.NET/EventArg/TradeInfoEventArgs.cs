@@ -34,5 +34,11 @@ namespace MT4Proxy.NET.EventArg
             get;
             set;
         }
+
+        public string Usercode
+        {
+            get;
+            set;
+        }
     }
 }

@@ -96,7 +96,14 @@ void MT4Wrapper::Release()
 {
 	if (m_pManagerDirect != nullptr)
 	{
-		m_pManagerDirect->Release();
+		try
+		{
+			m_pManagerDirect->Release();
+		}
+		catch (Exception^ e)
+		{
+			Log(e->Message);
+		}
 		m_pManagerDirect = nullptr;
 	}
 	if (m_pManagerPumping != nullptr)
@@ -104,7 +111,14 @@ void MT4Wrapper::Release()
 		auto remove = RemoveCache;
 		if (remove != nullptr)
 			remove(IntPtr(m_pManagerPumping));
-		m_pManagerPumping->Release();
+		try
+		{
+			m_pManagerPumping->Release();
+		}
+		catch (Exception^ e)
+		{
+			Log(e->Message);
+		}
 		m_pManagerPumping = nullptr;
 	}
 }
@@ -157,8 +171,6 @@ bool MT4Wrapper::ConnectPump()
 				auto update = UpdateCache;
 				if (update != nullptr)
 					update(key, this);
-
-
 				int total = 0;
 				m_pManagerPumping->SymbolsRefresh();
 				ConSymbol* pSymbols = m_pManagerPumping->SymbolsGetAll(&total);
