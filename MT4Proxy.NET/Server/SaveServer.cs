@@ -39,17 +39,6 @@ namespace MT4Proxy.NET
 
         public void Initialize()
         {
-            CFD_List = new Dictionary<string, double>();
-            CFD_List["WTOil"] = 450000;
-            CFD_List["USDX"] = 450000;
-            CFD_List["DAX"] = 150000;
-            CFD_List["FFI"] = 150000;
-            CFD_List["NK"] = 20000;
-            CFD_List["HSI"] = 30000;
-            CFD_List["SFC"] = 100000;
-            CFD_List["mDJ"] = 200000;
-            CFD_List["mND"] = 400000;
-            CFD_List["mSP"] = 200000;
             EnableRunning = true;
             PumpServer.OnNewQuote += WhenNewQuote;
             CopyServer.OnNewTrade += WhenNewTrade;
@@ -121,12 +110,6 @@ namespace MT4Proxy.NET
             set;
         }
 
-        public static Dictionary<string, double> CFD_List
-        {
-            get;
-            set;
-        }
-
         public void UpdateQuote(IEnumerable<Tuple<string, double, double, DateTime>> aItems)
         {
             var sql = string.Empty;
@@ -172,7 +155,7 @@ namespace MT4Proxy.NET
                     var match = j.Groups;
                     if (!string.IsNullOrWhiteSpace(match["leverage"].ToString()))
                         leverage = int.Parse(match["leverage"].ToString());
-                    Trade2Social(aTrade);
+                    //Trade2Social(aTrade);
                     Trade2Mysql(aTrade.TradeType, aTrade.Trade, j, leverage, 100000, 1.0f,
                         aTrade.FromUsercode, aTrade.ToUsercode);
                 }
@@ -180,10 +163,8 @@ namespace MT4Proxy.NET
                 {
                     var match = j.Groups;
                     var symbol = match["symbol"].ToString();
-                    var pov = 100000.0;
-                    if (CFD_List.ContainsKey(symbol))
-                        pov = CFD_List[symbol];
-                    Trade2Social(aTrade);
+                    var pov = ForexMath.GetPOV(symbol);
+                    //Trade2Social(aTrade);
                     Trade2Mysql(aTrade.TradeType, aTrade.Trade, j, 100, pov, 10.0f);
                 }
             }

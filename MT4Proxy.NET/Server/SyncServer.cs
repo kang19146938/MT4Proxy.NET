@@ -274,17 +274,19 @@ namespace MT4Proxy.NET.Core
             return result;
         }
 
-        public void SyncMaster()
+        public void SyncMaster(int aRange, int aBeginMT4, int aEndMT4, 
+            string aTableName="master", int aLimit = 50, Func<int, double> aRate = null)
         {
             var logger = Utils.CommonLog;
-            logger.Info("准备开始同步高手榜到MySQL");
+            logger.Info("准备开始同步高手榜[{0}]到MySQL", aTableName);
             var now = DateTime.UtcNow.Date;
-            var start_date = DateTime.UtcNow.AddDays(-30).Date;
+            var start_date = DateTime.UtcNow.AddDays(-aRange).Date;
             var sql_cmd = "SELECT mt4_id, SUM(`profit`+`storage`) / SUM(1000 * volume / leverage) AS profit_rate, " +
                 "COUNT(*) AS total_orders, " +
-                "SUM((close_price - open_price) * pow(10, digits -3) * (cmd * -2 + 1) * volume) AS total_pip " +
-                "FROM tiger.history WHERE `timestamp` > @start_date " +
-                "GROUP BY `mt4_id` ORDER BY profit_rate DESC limit 10;";
+                "SUM((close_price - open_price) * pow(10, digits -3) * ((cmd % 2) * -2 + 1) * volume * pip_coefficient) AS total_pip " +
+                "FROM {0} WHERE `timestamp` > @start_date AND login>={1} AND login<={2} AND `comment` <> \"cancelled\" " +
+                "GROUP BY `mt4_id` ORDER BY profit_rate DESC limit {3};";
+            sql_cmd = string.Format(sql_cmd, "tiger.history", aBeginMT4, aEndMT4, aLimit);
             var lstRate = new List<Tuple<int, double, int, double>>();
             using (var cmd = new MySqlCommand(sql_cmd, Source.MysqlSource))
             {
@@ -297,6 +299,8 @@ namespace MT4Proxy.NET.Core
                         var rate = double.Parse(master_reader["profit_rate"].ToString());
                         var pips = double.Parse(master_reader["total_pip"].ToString());
                         var orders = int.Parse(master_reader["total_orders"].ToString());
+                        if (aRate != null)
+                            rate = aRate(id);
                         logger.Info(string.Format("MasterList|MT4ID:{0}, Rate:{1}", id, rate));
                         lstRate.Add(new Tuple<int, double, int, double>(id, rate, orders, pips));
                     }
@@ -345,10 +349,11 @@ namespace MT4Proxy.NET.Core
                 }
                 if (dictProfile.ContainsKey(item.Item1) && dictProfitableCount.ContainsKey(item.Item1))
                 {
-                    sql_cmd = "INSERT INTO `master`(`date`,`username`,`sex`,`orders`, " +
+                    sql_cmd = "INSERT INTO `{0}`(`date`,`username`,`sex`,`orders`, " +
                     "`profit_rate`,`pips`, `percent_profitable`, `mt4_id`) " +
                     "VALUES(@date, @username, @sex, @orders, @profit_rate, @pips, " +
                     "@percent_profitable, @mt4_id);";
+                    sql_cmd = string.Format(sql_cmd, aTableName);
                     var percent_profitable = 0.0;
                     if (item.Item3 != 0)
                         percent_profitable = dictProfitableCount[item.Item1] / item.Item3;

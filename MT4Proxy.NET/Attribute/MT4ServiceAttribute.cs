@@ -11,6 +11,7 @@ namespace MT4Proxy.NET.Core
         public MT4ServiceAttribute()
         {
             ShowRequest = ShowResponse = true;
+            EnableZMQ = true;
         }
 
         public bool DisableMT4

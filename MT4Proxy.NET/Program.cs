@@ -50,7 +50,10 @@ namespace MT4Proxy.NET
                     return false;
                 }
                 var logger = Utils.CommonLog;
-                MT4CliWrapper.MT4Wrapper.OnLog += (a) => { logger.Info(a); };
+                MT4CliWrapper.MT4Wrapper.OnLog += (a) => 
+                {
+                    logger.Info(a); 
+                };
                 if (Environment.Is64BitProcess)
                     logger.Warn("警告，在64位环境启动");
                 else
@@ -65,7 +68,24 @@ namespace MT4Proxy.NET
                     var syncer = new SyncServer();
                     syncer.SyncSummary();
                     syncer.SyncEquity();
-                    syncer.SyncMaster();
+#if TESTENV
+                    syncer.SyncMaster(30, 500000, 599999);
+#else
+                    syncer.SyncMaster(30, 851000, 859999);
+                    syncer.SyncMaster(360, 850001, 850999, "contest_master", 100,
+                        new Func<int, double>((mt4) =>
+                        {
+                            using (var api = Poll.New())
+                            {
+                                var equity = 0.0;
+                                var balance = 0.0;
+                                var free = 0.0;
+                                api.GetEquity(mt4, ref equity, ref free, ref balance);
+                                return balance / 10000;
+                            }
+                        }
+                        ));
+#endif
                     Poll.StopPoll();
                     return false;
                 }

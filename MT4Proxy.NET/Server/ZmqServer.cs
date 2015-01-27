@@ -13,11 +13,26 @@ using Newtonsoft.Json.Linq;
 using System.Threading;
 using System.Web.Script.Serialization;
 using System.Diagnostics;
+using System.Linq;
 
 namespace MT4Proxy.NET.Core
 {
-    class ZmqServer : IInputOutput, IDisposable, IServer
+    class ZmqServer : ConfigBase, IInputOutput, IDisposable, IServer
     {
+        internal override void LoadConfig(NLog.Internal.ConfigurationManager aConfig)
+        {
+            ZmqBindAddr = aConfig.AppSettings["zmq_bind"];
+            ZmqPubBindAddr = aConfig.AppSettings["zmq_pub_bind"];
+        }
+
+        private static string ZmqBindAddr
+        { get; set; }
+
+        private static string ZmqPubBindAddr
+        {
+            get;
+            set;
+        }
         public void Initialize()
         {
             EnableRunning = true;
@@ -26,6 +41,31 @@ namespace MT4Proxy.NET.Core
 
         public void Stop()
         {
+            try
+            {
+                if(_respSockets != null)
+                {
+                    foreach(var i in _respSockets)
+                        i.Dispose();
+                    _respSockets = null;
+                }
+            }
+            catch(Exception e)
+            {
+                Utils.CommonLog.Error("关闭ZMQ监听套接字出现问题,{0}", e.Message);
+            }
+            try
+            {
+                if (_pubSocket != null)
+                {
+                    _pubSocket.Dispose();
+                    _pubSocket = null;
+                }
+            }
+            catch (Exception e)
+            {
+                Utils.CommonLog.Error("关闭Pub监听套接字出现问题,{0}", e.Message);
+            }
             EnableRunning = false;
             ServerContainer.FinishStop();
         }
@@ -40,6 +80,8 @@ namespace MT4Proxy.NET.Core
         private static Semaphore _pubSignal = new Semaphore(0, 20000);
         private static ConcurrentQueue<Tuple<string, string>>
             _queMessages = new ConcurrentQueue<Tuple<string, string>>();
+        private static IEnumerable<IZmqSocket> _respSockets = null;
+        private static IZmqSocket _pubSocket = null;
 
         private int _mt4ID = 0;
 
@@ -90,14 +132,9 @@ namespace MT4Proxy.NET.Core
         public void Init()
         {
             var initlogger = LogManager.GetLogger("common");
-            var config = new ConfigurationManager();
-            if(!bool.Parse(config.AppSettings["enable_zmq"]))
-            {
-                initlogger.Info("ZMQ服务被禁用，跳过ZMQ初始化");
-                return;
-            }
+            
             _zmqCtx = new Context();
-            var zmqBind = config.AppSettings["zmq_bind"];
+            
             foreach (var i in Utils.GetTypesWithServiceAttribute())
             {
                 var attr = i.GetCustomAttribute(typeof(MT4ServiceAttribute)) as MT4ServiceAttribute;
@@ -114,16 +151,34 @@ namespace MT4Proxy.NET.Core
                     _attrDict[serviceName] = attr;
                 }
             }
-            var repSocket = _zmqCtx.CreateSocket(SocketType.Rep);
             var pubSocket = _zmqCtx.CreateSocket(SocketType.Pub);
-            repSocket.Bind(zmqBind);
-            pubSocket.Bind(config.AppSettings["zmq_pub_bind"]);
+            _pubSocket = pubSocket;
+            var proto_items = ZmqBindAddr.Split(':');
+            var port_range = proto_items[2].Split('-').Select
+                (i => int.Parse(i.Trim())).ToArray();
+            if(port_range[0] > port_range[1] || port_range[1] - port_range[0] > 100)
+            {
+                throw new Exception("端口范围设定有bug");
+            }
+            pubSocket.Bind(ZmqPubBindAddr);
             _publisher = pubSocket;
             var th_pub = new Thread(PubProc);
             th_pub.IsBackground = true;
             th_pub.Start();
+            var lstSockets = new List<IZmqSocket>();
+            for (int i = port_range[0]; i <= port_range[1]; i++)
+            {
+                var addr = string.Format("{0}:{1}:{2}", proto_items[0], proto_items[1], i);
+                lstSockets.Add(StartLink(addr));
+            }
+        }
+
+        private IZmqSocket StartLink(string addr)
+        {
+            var sock = _zmqCtx.CreateSocket(SocketType.Rep);
+            sock.Bind(addr);
             var jss = new JavaScriptSerializer();
-            var polling = new Polling(PollingEvents.RecvReady, repSocket);
+            var polling = new Polling(PollingEvents.RecvReady, sock);
             var watch = new Stopwatch();
             polling.RecvReady += (socket) =>
             {
@@ -135,14 +190,14 @@ namespace MT4Proxy.NET.Core
                     var mt4_id = 0;
                     if (dict.ContainsKey("mt4UserID"))
                         mt4_id = Convert.ToInt32(dict["mt4UserID"]);
-                    if(_apiDict.ContainsKey(api_name))
+                    if (_apiDict.ContainsKey(api_name))
                     {
                         var service = _apiDict[api_name];
                         var serviceobj = Activator.CreateInstance(service) as IService;
                         using (var server = new ZmqServer(mt4_id, !_attrDict[api_name].DisableMT4))
                         {
                             server.Logger = LogManager.GetLogger("common");
-                            if(_attrDict[api_name].ShowRequest)
+                            if (_attrDict[api_name].ShowRequest)
                                 server.Logger.Info(string.Format("ZMQ,recv request:{0}", item));
                             watch.Restart();
                             serviceobj.OnRequest(server, dict);
@@ -161,26 +216,40 @@ namespace MT4Proxy.NET.Core
                                 watch.Stop();
                                 var elsp = watch.ElapsedMilliseconds;
                                 if (_attrDict[api_name].ShowResponse)
-                                    server.Logger.Warn(string.Format("ZMQ[{0}ms] response empty,source:{1}", 
-                                        elsp, item));                            
+                                    server.Logger.Warn(string.Format("ZMQ[{0}ms] response empty,source:{1}",
+                                        elsp, item));
                             }
                         }
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     var logger = LogManager.GetLogger("clr_error");
-                    logger.Error("处理单个ZMQ请求失败,{0}", e.StackTrace);
+                    logger.Error("处理单个ZMQ请求失败,{0},{1}", e.Message, e.StackTrace);
                     socket.Send(string.Empty);
                 }
                 finally
                 {
                     if (EnableRunning)
-                        Task.Factory.StartNew(() => { polling.PollForever(); });
+                        ContinuePoll(polling);
                 }
             };
             if (EnableRunning)
-                Task.Factory.StartNew(() => { polling.PollForever(); });
+                ContinuePoll(polling);
+            return sock;
+        }
+
+        private static void ContinuePoll(Polling polling)
+        {
+            Task.Factory.StartNew(() => 
+            {
+                try
+                {
+                    polling.PollForever();
+                }
+                catch
+                { }
+            });
         }
 
         public void Pub(string aChannel, string aJson)

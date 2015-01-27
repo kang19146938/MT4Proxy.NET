@@ -4,6 +4,7 @@ using NLog;
 using NLog.Internal;
 using System;
 using System.Collections.Generic;
+using System.Data.SQLite;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -29,10 +30,24 @@ namespace MT4Proxy.NET.Core
             RedisCopyPort = int.Parse(aConfig.AppSettings["redis_copy_port"]);
             RedisCopyPasswd = aConfig.AppSettings["redis_copy_password"];
             RedisCopyDb = int.Parse(aConfig.AppSettings["redis_copy_db"]);
+            CopyConnectString = aConfig.AppSettings["copy_cs"];
         }
 
         public DockServer()
         {
+            _localSource = new DockItem() { Name = "LocalSource" };
+            _localSource.Create = new Func<object>(() =>
+            {
+                var result = new SQLiteConnection(CopyConnectString);
+                result.Open();
+                return result;
+            });
+            _localSource.Shutdown = new Action<object>((i) =>
+            {
+                var connection = i as SQLiteConnection;
+                connection.Close();
+            });
+
             _mysqlSource = new DockItem() { Name = "MySQLSource" };
             _mysqlSource.Create = new Func<object>(() =>
             {
@@ -103,6 +118,19 @@ namespace MT4Proxy.NET.Core
         private DockItem _mysqlAccount = null;
         private DockItem _redisSocial = null;
         private DockItem _redisCopy = null;
+        private DockItem _localSource = null;
+
+        public SQLiteConnection CopySource
+        {
+            get
+            {
+                return Bones<SQLiteConnection>(_localSource);
+            }
+            set
+            {
+                _localSource.Connection = value;
+            }
+        }
 
         public MySqlConnection MysqlSource
         {
@@ -180,8 +208,8 @@ namespace MT4Proxy.NET.Core
                 {
                     var logger = Utils.CommonLog;
                     logger.Warn(
-                        string.Format("{0}连接建立失败，一秒之后重试，剩余机会{1}",
-                        aItem.Name, aItem.RetryTimes + 1), e);
+                        string.Format("{0}连接建立失败，一秒之后重试，剩余机会{1}:{2}",
+                        aItem.Name, aItem.RetryTimes + 1, e.Message), e);
                     Thread.Sleep(aItem.RetryPeriodMS);
                     continue;
                 }
@@ -199,6 +227,12 @@ namespace MT4Proxy.NET.Core
             }
         }
 
+
+        private static string CopyConnectString
+        {
+            get;
+            set;
+        }
         internal static string ConnectString
         {
             get;

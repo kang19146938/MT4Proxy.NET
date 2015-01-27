@@ -14,6 +14,7 @@ namespace MT4Proxy.NET.Core
 {
     public static class Utils
     {
+        public enum TRADE_COMMAND { OP_BUY = 0, OP_SELL, OP_BUY_LIMIT, OP_SELL_LIMIT, OP_BUY_STOP, OP_SELL_STOP, OP_BALANCE, OP_CREDIT };
         public static Logger CommonLog
         {
             get
@@ -49,6 +50,28 @@ namespace MT4Proxy.NET.Core
             ret.errCode = errCode;
             ret.errMsg = errMsg;
             return ret;
+        }
+
+        public static IEnumerable<Dictionary<string, object>> FetchRecords(dynamic aCommand, params string[] aFields)
+        {
+            var result = new List<Dictionary<string, object>>();
+            using(var cmd = aCommand)
+            {
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var item = new Dictionary<string, object>();
+                        foreach (var i in aFields)
+                        {
+                            item[i] = reader[i];
+                        }
+                    }
+                }
+            }
+            if (result.Count == 0)
+                return null;
+            return result;
         }
 
         public static IEnumerable<Type> GetTypesWithServiceAttribute()

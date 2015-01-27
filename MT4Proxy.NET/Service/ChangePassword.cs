@@ -13,32 +13,8 @@ using System.Threading.Tasks;
 namespace MT4Proxy.NET.Service
 {
     [MT4Service(EnableZMQ = true)]
-    class ChangePassword : ConfigBase, IService
+    class ChangePassword : IService
     {
-        private static string MT4Addr
-        {
-            get;
-            set;
-        }
-
-        private static int MT4User
-        {
-            get;
-            set;
-        }
-
-        private static string MT4Pass
-        {
-            get;
-            set;
-        }
-
-        internal override void LoadConfig(ConfigurationManager aConfig)
-        {
-            MT4Addr = aConfig.AppSettings["mt4demo_host"];
-            MT4User = int.Parse(aConfig.AppSettings["mt4demo_user"]);
-            MT4Pass = aConfig.AppSettings["mt4demo_passwd"];
-        }
         public void OnRequest(IInputOutput aServer, dynamic aJson)
         {
             try
@@ -47,7 +23,7 @@ namespace MT4Proxy.NET.Service
                 var is_real = (bool)dict["is_real"];
                 var api = aServer.MT4;
                 if (!is_real)
-                    api = new MT4API(MT4Addr, MT4User, MT4Pass);
+                    api = Poll.DemoAPI();
                 var result = api.ChangePassword(Convert.ToInt32(dict["mt4UserID"]), dict["password"].ToString());
                 dynamic resp = new ExpandoObject();
                 resp.is_succ = result == RET_CODE.RET_OK;

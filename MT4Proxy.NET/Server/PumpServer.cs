@@ -14,9 +14,15 @@ namespace MT4Proxy.NET
 {
     internal class PumpServer: ConfigBase, IServer
     {
+        static PumpServer()
+        {
+            AllowAccounts = new List<Tuple<int, int>>();
+        }
+
         internal override void LoadConfig(NLog.Internal.ConfigurationManager aConfig)
         {
             PumperCount = int.Parse(aConfig.AppSettings["pump_count"]);
+            AllowAccount = aConfig.AppSettings["pump_allow_mt4_account"];
             if (PumperCount < 1)
             {
                 string errInfo = "接收MT4推送的线程数量不正确";
@@ -24,6 +30,36 @@ namespace MT4Proxy.NET
                 logger.Error(errInfo);
                 throw new Exception(errInfo);
             }
+        }
+
+        private static IEnumerable<Tuple<int, int>> AllowAccounts;
+
+        private static string AllowAccount
+        {
+            set
+            {
+                var groups = value.Split(',') as IEnumerable<string>;
+                groups = groups.Where(i => !string.IsNullOrWhiteSpace(i));
+                groups = groups.Select(i => i.Trim());
+                AllowAccounts = groups.Select(i =>
+                {
+                    var items = i.Split('-');
+                    var a = int.Parse(items[0].Trim());
+                    var b = int.Parse(items[1].Trim());
+                    if (b < a)
+                    {
+                        a = a + b;
+                        b = a - b;
+                        a = a - b;
+                    }
+                    return new Tuple<int, int>(a, b);
+                }).ToArray();
+            }
+        }
+
+        private static bool IsAllowAccount(int aMT4ID)
+        {
+            return AllowAccounts.Any(i => i.Item1 <= aMT4ID && i.Item2 >= aMT4ID);
         }
 
         private static int PumperCount
@@ -87,8 +123,11 @@ namespace MT4Proxy.NET
             while (Utils.SignalWait(ref EnableRunning, _tradeSignal))
             {
                 _queTrades.TryDequeue(out item);
-                if (item == null)
+                var a = item.Item2.order;
+                var b = item.Item1.ToString();
+                if (item == null || !IsAllowAccount(item.Item2.login))
                     continue;
+                if (item.Item2.comment.Contains("cancelled")) continue;
                 var trade = item.Item2;
                 var trade_type = item.Item1;
                 if (trade.timestamp > _lastTradeTime)

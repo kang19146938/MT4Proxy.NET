@@ -5,29 +5,14 @@ using System.Dynamic;
 using MT4CliWrapper;
 using NLog;
 using NLog.Internal;
+using System.Data.SQLite;
 
 namespace MT4Proxy.NET.Service
 {
     [MT4Service(EnableZMQ = true)]
     class OpenAccount : ConfigBase, IService
     {
-        private static string MT4Addr
-        {
-            get;
-            set;
-        }
-
-        private static int MT4User
-        {
-            get;
-            set;
-        }
-
-        private static string MT4Pass
-        {
-            get;
-            set;
-        }
+        public static event EventHandler<EventArg.CreateUserEventArgs> OnCreateUser = null;
 
         private static string MT4Group
         { get; set; }
@@ -40,9 +25,6 @@ namespace MT4Proxy.NET.Service
 
         internal override void LoadConfig(ConfigurationManager aConfig)
         {
-            MT4Addr = aConfig.AppSettings["mt4demo_host"];
-            MT4User = int.Parse(aConfig.AppSettings["mt4demo_user"]);
-            MT4Pass = aConfig.AppSettings["mt4demo_passwd"];
             MT4Group = aConfig.AppSettings["mt4demo_group"];
             InitEqutiy = double.Parse(aConfig.AppSettings["init_equity"]);
         }
@@ -53,9 +35,11 @@ namespace MT4Proxy.NET.Service
                 var dict = aJson;
                 var api = aServer.MT4;
                 var is_real = Convert.ToBoolean(dict["is_real"]);
+                var user_code = Convert.ToInt32(dict["invite_code"]);
+                var mt4_id = Convert.ToInt32(dict["mt4UserID"]);
                 var args = new UserRecordArgs
                 {
-                    login = Convert.ToInt32(dict["mt4UserID"]),
+                    login = mt4_id,
                     password = dict["password"],
                     name = dict["name"],
                     email = dict["email"],
@@ -65,12 +49,20 @@ namespace MT4Proxy.NET.Service
                 if(!is_real)
                 {
                     args.group = MT4Group;
-                    api = new MT4API(MT4Addr, MT4User, MT4Pass);
+                    api = Poll.DemoAPI();
                 }
 
                 var result = api.OpenAccount(args);
                 if(result == RET_CODE.RET_OK)
                 {
+                    var handle = OnCreateUser;
+                    if (handle != null)
+                        handle(this, new EventArg.CreateUserEventArgs
+                        {
+                            MT4ID = mt4_id,
+                            Usercode = user_code,
+                            IsLiveAccount = is_real
+                        });
                     if (!is_real && InitEqutiy > 0)
                     {
                         var money_args = new TradeTransInfoArgsResult

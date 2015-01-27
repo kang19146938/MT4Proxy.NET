@@ -233,7 +233,7 @@ int MT4Wrapper::PumpCallback(int code, int type, void *data, void *param)
 	if (code == PUMP_UPDATE_TRADES && data != NULL)
 	{
 		TradeRecord *trade = (TradeRecord*)data;
-		if (type == TRANS_ADD || type == TRANS_DELETE)
+		if (type == TRANS_ADD || type == TRANS_DELETE || type == TRANS_UPDATE)
 		{
 			TradeRecordResult result;
 			result.FromNative(trade);
@@ -308,7 +308,8 @@ RET_CODE MT4Wrapper::OpenAccount(UserRecordArgs aArgs)
 TradeRecordResult MT4Wrapper::AdmTradesRequest(int orderID, bool open_only)
 {
 	String^ order = String::Format("#{0}", orderID);
-	const char* orderName = marshal_as<std::string, System::String^>(order).c_str();
+	std::string str_order = marshal_as<std::string, System::String^>(order);
+	const char* orderName = str_order.c_str();
 	int resultTotal = 0;
 	TradeRecord* ret = m_pManagerDirect->AdmTradesRequest(orderName, open_only ? 1 : 0, &resultTotal);
 	TradeRecordResult result = TradeRecordResult();

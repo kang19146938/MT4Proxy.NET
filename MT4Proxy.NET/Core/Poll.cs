@@ -29,7 +29,15 @@ namespace MT4Proxy.NET.Core
             MT4AdminID = int.Parse(aConfig.AppSettings["mt4_user"]);
             MT4Passwd = aConfig.AppSettings["mt4_passwd"];
             MT4Group = aConfig.AppSettings["mt4_group"];
+            MT4DemoHost = aConfig.AppSettings["mt4demo_host"];
+            MT4DemoAdminID = int.Parse(aConfig.AppSettings["mt4demo_user"]);
+            MT4DemoPasswd = aConfig.AppSettings["mt4demo_passwd"];
             MT4API.init(MT4Host, MT4AdminID, MT4Passwd);
+        }
+
+        public static MT4Wrapper DemoAPI()
+        {
+            return new MT4Wrapper(MT4DemoHost, MT4DemoAdminID, MT4DemoPasswd);
         }
         public static MT4Wrapper Fetch(int id)
         {
@@ -165,6 +173,15 @@ namespace MT4Proxy.NET.Core
         { get; private set; }
 
         public static string MT4Group
+        { get; private set; }
+
+        public static string MT4DemoHost
+        { get; private set; }
+
+        public static int MT4DemoAdminID
+        { get; private set; }
+
+        public static string MT4DemoPasswd
         { get; private set; }
     }
 }
